@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ClinicalQ Studio</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="backdrop"></div>
+    <main class="layout">
+      <section class="panel hero">
+        <h1>ClinicalQ Studio</h1>
+        <p>Offline OpenBCI Cyton workflow for guided ClinicalQ capture and automated ratio/probe interpretation.</p>
+        <div id="pythonStatus" class="status-chip">Checking Python runtime...</div>
+      </section>
+
+      <section class="panel controls">
+        <h2>Session Setup</h2>
+        <div class="grid two-col">
+          <label>
+            Mode
+            <select id="mode">
+              <option value="sequential">Sequential (O1 -> Cz -> Fz -> F3 -> F4)</option>
+              <option value="simultaneous">Simultaneous (all five electrodes)</option>
+            </select>
+          </label>
+          <label>
+            Serial Port
+            <input id="serialPort" value="COM3" />
+          </label>
+          <label>
+            Epoch Seconds
+            <input id="epochSeconds" type="number" min="5" max="60" value="15" />
+          </label>
+          <label>
+            Reposition Seconds
+            <input id="repositionSeconds" type="number" min="0" max="90" value="20" />
+          </label>
+          <label class="toggle">
+            <input id="useSynthetic" type="checkbox" checked />
+            <span>Use synthetic board (hardware-free test)</span>
+          </label>
+          <label class="toggle">
+            <input id="fastMode" type="checkbox" checked />
+            <span>Fast mode (skip waiting during tests)</span>
+          </label>
+          <label class="toggle">
+            <input id="includeFrontalBaseline" type="checkbox" checked />
+            <span>Extra frontal EC baseline in simultaneous mode</span>
+          </label>
+        </div>
+
+        <h3>Channel Map (BrainFlow EEG index)</h3>
+        <div class="grid channels">
+          <label>Cz <input id="chCz" type="number" value="1" min="1" max="16" /></label>
+          <label>O1 <input id="chO1" type="number" value="2" min="1" max="16" /></label>
+          <label>Fz <input id="chFz" type="number" value="3" min="1" max="16" /></label>
+          <label>F3 <input id="chF3" type="number" value="4" min="1" max="16" /></label>
+          <label>F4 <input id="chF4" type="number" value="5" min="1" max="16" /></label>
+        </div>
+
+        <div class="actions">
+          <button id="startBtn" class="primary">Start ClinicalQ Session</button>
+          <button id="stopBtn" class="danger" disabled>Stop</button>
+        </div>
+      </section>
+
+      <section class="panel live">
+        <h2>Live Guidance</h2>
+        <div id="liveEvent" class="live-event">Waiting to start.</div>
+        <div class="event-scroll" id="eventLog"></div>
+      </section>
+
+      <section class="panel results">
+        <h2>ClinicalQ Ratios and Probe Guidance</h2>
+        <div id="summary" class="summary">Run a session to generate results.</div>
+        <div class="table-wrap">
+          <table id="resultsTable">
+            <thead>
+              <tr>
+                <th>Location</th>
+                <th>Metric</th>
+                <th>Value</th>
+                <th>Norm</th>
+                <th>Status</th>
+                <th>Potential Symptom Questions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <h3>Combined Probe Checklist</h3>
+        <ul id="probeList" class="probe-list"></ul>
+      </section>
+    </main>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>
+

@@ -1,0 +1,24 @@
+{
+  "mode": "sequential",
+  "epoch_seconds": 15,
+  "reposition_seconds": 20,
+  "sampling_rate": 250,
+  "fast_mode": true,
+  "include_frontal_baseline": true,
+  "board": {
+    "board_id": "cyton",
+    "serial_port": "COM3",
+    "use_synthetic": true,
+    "available_channels": [1, 2, 3, 4, 5, 6, 7, 8],
+    "seed": 42
+  },
+  "channels": {
+    "Cz": 1,
+    "O1": 2,
+    "Fz": 3,
+    "F3": 4,
+    "F4": 5
+  },
+  "sequential_order": ["O1", "Cz", "Fz", "F3", "F4"]
+}
+

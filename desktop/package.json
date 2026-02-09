@@ -1,0 +1,14 @@
+{
+  "name": "clinicalq-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Offline ClinicalQ desktop app (Electron + Python backend)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  }
+}
+
