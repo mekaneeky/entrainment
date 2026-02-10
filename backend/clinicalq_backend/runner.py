@@ -7,6 +7,8 @@ import time
 from dataclasses import asdict
 from typing import Any, Dict, Iterable, List
 
+import numpy as np
+
 from clinicalq_backend.analysis import analyze_session, session_result_to_dict
 from clinicalq_backend.bands import extract_features
 from clinicalq_backend.openbci import create_board
@@ -74,6 +76,10 @@ def _capture_epoch(
     spec: EpochSpec,
     active_locations: List[str],
     event_cb: EventCallback | None,
+    *,
+    fast_mode: bool,
+    live_bandpower: bool,
+    live_window_seconds: float,
 ) -> EpochCapture:
     _emit(
         event_cb,
@@ -84,9 +90,9 @@ def _capture_epoch(
         instruction=spec.instruction,
         seconds=spec.seconds,
         locations=active_locations,
-    )
+        )
 
-    def _on_tick(seconds_remaining: int) -> None:
+    def _emit_tick(seconds_remaining: int) -> None:
         _emit(
             event_cb,
             "epoch_tick",
@@ -96,7 +102,69 @@ def _capture_epoch(
             seconds_remaining=seconds_remaining,
         )
 
-    epoch_data = board.read_epoch(spec.seconds, spec.label, on_tick=_on_tick)
+    epoch_data: Dict[int, np.ndarray]
+    needed_channels = {int(channels[loc]) for loc in active_locations}
+    buffers: Dict[int, List[np.ndarray]] = {ch: [] for ch in needed_channels}
+    target_samples = int(spec.seconds * board.sampling_rate)
+
+    can_stream = live_bandpower and hasattr(board, "flush") and hasattr(board, "read_chunk")
+    if can_stream:
+        board.flush()
+        window_samples = max(1, int(live_window_seconds * board.sampling_rate))
+
+        for sec in range(spec.seconds):
+            if not fast_mode:
+                time.sleep(1.0)
+            seconds_remaining = spec.seconds - sec - 1
+
+            chunk = board.read_chunk(int(board.sampling_rate), spec.label) or {}
+            for ch in needed_channels:
+                sig = chunk.get(ch)
+                if sig is None or np.asarray(sig).size == 0:
+                    continue
+                buffers[ch].append(np.asarray(sig, dtype=float))
+
+            _emit_tick(seconds_remaining)
+
+            live_features: Dict[str, Dict[str, float]] = {}
+            for loc in active_locations:
+                ch = int(channels[loc])
+                if not buffers.get(ch):
+                    continue
+                sig = np.concatenate(buffers[ch], axis=0)
+                win = sig[-window_samples:] if sig.size > window_samples else sig
+                live_features[loc] = extract_features(win, board.sampling_rate)
+
+            if live_features:
+                _emit(
+                    event_cb,
+                    "bandpower",
+                    sequence=sequence_name,
+                    index=spec.index,
+                    label=spec.label,
+                    seconds_elapsed=sec + 1,
+                    seconds_remaining=seconds_remaining,
+                    window_seconds=live_window_seconds,
+                    features=live_features,
+                )
+
+        epoch_data = {}
+        for ch in needed_channels:
+            if buffers.get(ch):
+                sig = np.concatenate(buffers[ch], axis=0)
+            else:
+                sig = np.zeros(0, dtype=float)
+
+            if sig.size >= target_samples:
+                epoch_data[ch] = sig[:target_samples]
+            elif sig.size > 0:
+                epoch_data[ch] = np.pad(sig, (0, target_samples - sig.size), mode="edge")
+            else:
+                epoch_data[ch] = np.zeros(target_samples, dtype=float)
+
+    else:
+        # Fallback: block-capture the whole epoch (no live bandpower).
+        epoch_data = board.read_epoch(spec.seconds, spec.label, on_tick=_emit_tick)
 
     features: Dict[str, Dict[str, float]] = {}
     for location in active_locations:
@@ -169,6 +237,8 @@ def run_session(config: Dict[str, Any], event_cb: EventCallback | None = None) -
     reposition_seconds = int(config.get("reposition_seconds", 20))
     fast_mode = bool(config.get("fast_mode", False))
     reposition_mode = str(config.get("reposition_mode", "timer")).lower()
+    live_bandpower = bool(config.get("live_bandpower", True))
+    live_window_seconds = float(config.get("live_window_seconds", 2.0))
     channels = _resolve_channels(config)
     _validate_required_channels(channels)
 
@@ -193,7 +263,19 @@ def run_session(config: Dict[str, Any], event_cb: EventCallback | None = None) -
             _emit(event_cb, "sequence_start", sequence="MASTER", locations=active_locations, total_epochs=len(sequence))
 
             for spec in sequence:
-                captures.append(_capture_epoch(board, channels, "MASTER", spec, active_locations, event_cb))
+                captures.append(
+                    _capture_epoch(
+                        board,
+                        channels,
+                        "MASTER",
+                        spec,
+                        active_locations,
+                        event_cb,
+                        fast_mode=fast_mode,
+                        live_bandpower=live_bandpower,
+                        live_window_seconds=live_window_seconds,
+                    )
+                )
 
             _emit(event_cb, "sequence_complete", sequence="MASTER")
 
@@ -240,7 +322,19 @@ def run_session(config: Dict[str, Any], event_cb: EventCallback | None = None) -
 
                 _emit(event_cb, "sequence_start", sequence=location, locations=[location], total_epochs=len(sequence))
                 for spec in sequence:
-                    captures.append(_capture_epoch(board, channels, location, spec, [location], event_cb))
+                    captures.append(
+                        _capture_epoch(
+                            board,
+                            channels,
+                            location,
+                            spec,
+                            [location],
+                            event_cb,
+                            fast_mode=fast_mode,
+                            live_bandpower=live_bandpower,
+                            live_window_seconds=live_window_seconds,
+                        )
+                    )
                 _emit(event_cb, "sequence_complete", sequence=location)
 
         else:

@@ -16,6 +16,15 @@ const refs = {
   stopBtn: document.getElementById("stopBtn"),
   readyBtn: document.getElementById("readyBtn"),
   readyHint: document.getElementById("readyHint"),
+  followActive: document.getElementById("followActive"),
+  bandLoc: document.getElementById("bandLoc"),
+  bandDelta: document.getElementById("bandDelta"),
+  bandTheta: document.getElementById("bandTheta"),
+  bandAlpha: document.getElementById("bandAlpha"),
+  bandBeta: document.getElementById("bandBeta"),
+  bandHiBeta: document.getElementById("bandHiBeta"),
+  bandCanvas: document.getElementById("bandCanvas"),
+  bandValues: document.getElementById("bandValues"),
   pythonStatus: document.getElementById("pythonStatus"),
   liveEvent: document.getElementById("liveEvent"),
   eventLog: document.getElementById("eventLog"),
@@ -26,6 +35,37 @@ const refs = {
 
 let running = false;
 let pendingReadyLocation = null;
+let activeLocation = null;
+
+const BAND_META = {
+  delta: { label: "Delta", color: "#a9302f" },
+  theta: { label: "Theta", color: "#0b8da3" },
+  alpha: { label: "Alpha", color: "#9b5b00" },
+  beta: { label: "Beta", color: "#1f7d48" },
+  hibeta: { label: "HiBeta", color: "#2b3a46" },
+};
+
+const bandState = {
+  epochKey: null,
+  sequence: null,
+  index: null,
+  label: null,
+  byLocation: {
+    Cz: {},
+    O1: {},
+    Fz: {},
+    F3: {},
+    F4: {},
+  },
+};
+
+function resetBandState(epochKey) {
+  bandState.epochKey = epochKey;
+  for (const loc of Object.keys(bandState.byLocation)) {
+    bandState.byLocation[loc] = { delta: [], theta: [], alpha: [], beta: [], hibeta: [] };
+  }
+  drawBandpower();
+}
 
 function nowStamp() {
   return new Date().toLocaleTimeString();
@@ -132,6 +172,8 @@ function buildConfig() {
     epoch_seconds: Number(refs.epochSeconds.value || 15),
     reposition_seconds: Number(refs.repositionSeconds.value || 20),
     reposition_mode: manualAdvance ? "manual" : "timer",
+    live_bandpower: true,
+    live_window_seconds: 2.0,
     sampling_rate: 250,
     fast_mode: refs.fastMode.checked,
     include_frontal_baseline: refs.includeFrontalBaseline.checked,
@@ -200,9 +242,162 @@ function summarizeEvent(event) {
   }
 }
 
+function selectedBands() {
+  return {
+    delta: Boolean(refs.bandDelta?.checked),
+    theta: Boolean(refs.bandTheta?.checked),
+    alpha: Boolean(refs.bandAlpha?.checked),
+    beta: Boolean(refs.bandBeta?.checked),
+    hibeta: Boolean(refs.bandHiBeta?.checked),
+  };
+}
+
+function selectedLocation() {
+  return String(refs.bandLoc?.value || "Cz");
+}
+
+function resizeCanvasToDisplaySize(canvas) {
+  if (!canvas) return null;
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const width = Math.max(1, Math.floor(rect.width * dpr));
+  const height = Math.max(1, Math.floor(rect.height * dpr));
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+  }
+  return { width, height, dpr };
+}
+
+function drawBandpower() {
+  const canvas = refs.bandCanvas;
+  if (!canvas) return;
+  const size = resizeCanvasToDisplaySize(canvas);
+  if (!size) return;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const loc = selectedLocation();
+  const bands = selectedBands();
+  const data = bandState.byLocation[loc] || {};
+  const keys = Object.keys(BAND_META).filter((k) => bands[k]);
+
+  const padding = { left: 44, right: 12, top: 10, bottom: 22 };
+  const plotW = size.width - padding.left - padding.right;
+  const plotH = size.height - padding.top - padding.bottom;
+
+  ctx.clearRect(0, 0, size.width, size.height);
+
+  // background
+  ctx.fillStyle = "rgba(255, 255, 255, 0.0)";
+  ctx.fillRect(0, 0, size.width, size.height);
+
+  // figure out y range
+  let yMax = 0;
+  let xMax = 0;
+  for (const key of keys) {
+    const series = data[key] || [];
+    xMax = Math.max(xMax, series.length);
+    for (const v of series) {
+      if (Number.isFinite(v)) yMax = Math.max(yMax, v);
+    }
+  }
+  if (!Number.isFinite(yMax) || yMax <= 0) yMax = 1.0;
+  yMax *= 1.1;
+
+  // grid
+  ctx.strokeStyle = "rgba(0,0,0,0.08)";
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i += 1) {
+    const y = padding.top + (plotH * i) / 4;
+    ctx.beginPath();
+    ctx.moveTo(padding.left, y);
+    ctx.lineTo(padding.left + plotW, y);
+    ctx.stroke();
+  }
+
+  // y labels
+  ctx.fillStyle = "rgba(0,0,0,0.65)";
+  ctx.font = `${Math.max(11, Math.floor(11 * (size.dpr / (window.devicePixelRatio || 1))))}px Bahnschrift, sans-serif`;
+  ctx.fillText(`${yMax.toFixed(1)} uV`, 6, padding.top + 10);
+  ctx.fillText("0", 6, padding.top + plotH);
+
+  // title
+  const title = bandState.label ? `${loc} ${bandState.label}` : `${loc}`;
+  ctx.fillStyle = "rgba(0,0,0,0.75)";
+  ctx.fillText(title, padding.left, padding.top + 10);
+
+  // plot series
+  const n = Math.max(2, xMax);
+  const xStep = plotW / (n - 1);
+
+  for (const key of keys) {
+    const series = data[key] || [];
+    if (series.length < 2) continue;
+
+    ctx.strokeStyle = BAND_META[key].color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < series.length; i += 1) {
+      const v = series[i];
+      const x = padding.left + xStep * i;
+      const y = padding.top + plotH - (Math.max(0, v) / yMax) * plotH;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  // current values
+  const parts = [];
+  for (const key of keys) {
+    const series = data[key] || [];
+    const last = series.length ? series[series.length - 1] : null;
+    if (last === null || last === undefined || !Number.isFinite(last)) continue;
+    parts.push(`${BAND_META[key].label}: ${last.toFixed(2)} uV`);
+  }
+  if (refs.bandValues) {
+    refs.bandValues.textContent = parts.length ? parts.join("   ") : "Waiting for bandpower data...";
+  }
+}
+
+function syncBandpowerUi() {
+  const follow = Boolean(refs.followActive?.checked);
+  if (refs.bandLoc) refs.bandLoc.disabled = follow;
+  drawBandpower();
+}
+
 window.clinicalQ.onSessionEvent((event) => {
   if (event.event === "session_start") {
     setReadyState(null);
+    bandState.sequence = null;
+    bandState.index = null;
+    bandState.label = null;
+    resetBandState(`${Date.now()}`);
+  }
+  if (event.event === "epoch_start") {
+    bandState.sequence = event.sequence;
+    bandState.index = event.index;
+    bandState.label = event.label;
+    resetBandState(`${event.sequence}-${event.index}-${event.label}`);
+    if (refs.followActive?.checked && Array.isArray(event.locations) && event.locations.length === 1) {
+      activeLocation = event.locations[0];
+      if (refs.bandLoc) refs.bandLoc.value = activeLocation;
+    }
+    syncBandpowerUi();
+  }
+  if (event.event === "bandpower") {
+    const features = event.features || {};
+    for (const [loc, vals] of Object.entries(features)) {
+      const dest = bandState.byLocation[loc];
+      if (!dest) continue;
+      for (const key of Object.keys(BAND_META)) {
+        const v = Number(vals?.[key]);
+        if (Number.isFinite(v)) dest[key].push(v);
+      }
+    }
+    drawBandpower();
   }
   if (event.event === "reposition_start" && event.mode === "manual") {
     setReadyState(event.next_location);
@@ -266,9 +461,19 @@ function syncRepositionUi() {
   refs.repositionSeconds.disabled = manual;
 }
 
+if (refs.followActive) refs.followActive.addEventListener("change", syncBandpowerUi);
+if (refs.bandLoc) refs.bandLoc.addEventListener("change", syncBandpowerUi);
+if (refs.bandDelta) refs.bandDelta.addEventListener("change", drawBandpower);
+if (refs.bandTheta) refs.bandTheta.addEventListener("change", drawBandpower);
+if (refs.bandAlpha) refs.bandAlpha.addEventListener("change", drawBandpower);
+if (refs.bandBeta) refs.bandBeta.addEventListener("change", drawBandpower);
+if (refs.bandHiBeta) refs.bandHiBeta.addEventListener("change", drawBandpower);
+window.addEventListener("resize", drawBandpower);
+
 refs.mode.addEventListener("change", syncRepositionUi);
 refs.manualReposition.addEventListener("change", syncRepositionUi);
 syncRepositionUi();
+syncBandpowerUi();
 
 checkPython().catch((err) => {
   refs.pythonStatus.textContent = `Runtime check failed: ${err.message || err}`;

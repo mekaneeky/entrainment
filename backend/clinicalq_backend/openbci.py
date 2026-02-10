@@ -28,6 +28,12 @@ class BoardBase:
     def stop(self) -> None:
         raise NotImplementedError
 
+    def flush(self) -> None:
+        return
+
+    def read_chunk(self, n_samples: int, label: str) -> Dict[int, np.ndarray]:
+        raise NotImplementedError
+
     def read_epoch(
         self,
         seconds: int,
@@ -108,6 +114,17 @@ class SimulatedBoard(BoardBase):
         self._sample_cursor += n_samples
         return data
 
+    def read_chunk(self, n_samples: int, label: str) -> Dict[int, np.ndarray]:
+        if n_samples <= 0:
+            return {}
+
+        data: Dict[int, np.ndarray] = {}
+        for ch in self.eeg_channels:
+            data[ch] = self._generate_channel(ch, int(n_samples), label)
+
+        self._sample_cursor += int(n_samples)
+        return data
+
 
 class BrainFlowBoard(BoardBase):
     PARAM_FIELDS = [
@@ -172,6 +189,9 @@ class BrainFlowBoard(BoardBase):
         time.sleep(1.0)
         self.board.get_board_data()
 
+    def flush(self) -> None:
+        self.board.get_board_data()
+
     def stop(self) -> None:
         try:
             self.board.stop_stream()
@@ -212,6 +232,17 @@ class BrainFlowBoard(BoardBase):
                 out[ch] = np.zeros(n_samples, dtype=float)
         return out
 
+    def read_chunk(self, n_samples: int, label: str) -> Dict[int, np.ndarray]:
+        data = self.board.get_board_data()
+        if data.size == 0:
+            return {}
+
+        out: Dict[int, np.ndarray] = {}
+        for ch in self.eeg_channels:
+            sig = np.asarray(data[ch], dtype=float)
+            out[ch] = sig
+        return out
+
 
 def create_board(config: dict) -> BoardBase:
     board_cfg = dict(config.get("board", {}))
@@ -227,4 +258,3 @@ def create_board(config: dict) -> BoardBase:
         return SimulatedBoard(runtime=runtime, channels=channels, seed=int(board_cfg.get("seed", 42)))
 
     return BrainFlowBoard(runtime=runtime, board_config=board_cfg)
-

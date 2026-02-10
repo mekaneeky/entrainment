@@ -13,6 +13,8 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "epoch_seconds": 15,
     "reposition_seconds": 20,
     "reposition_mode": "timer",
+    "live_bandpower": True,
+    "live_window_seconds": 2.0,
     "sampling_rate": 250,
     "fast_mode": False,
     "include_frontal_baseline": True,

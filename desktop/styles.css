@@ -199,6 +199,49 @@ button.danger {
   font-size: 0.9rem;
 }
 
+.bandpower-card {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.78);
+  padding: 10px;
+}
+
+.bandpower-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.bandpower-title {
+  font-weight: 900;
+  letter-spacing: 0.03em;
+}
+
+.bandpower-legend {
+  margin-top: 8px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bandpower-canvas {
+  margin-top: 10px;
+  width: 100%;
+  height: 180px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(15, 40, 49, 0.06), rgba(15, 40, 49, 0.02));
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.band-values {
+  margin-top: 8px;
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: 0.86rem;
+  color: #22343f;
+}
+
 .event-scroll {
   margin-top: 10px;
   max-height: 320px;

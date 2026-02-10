@@ -78,6 +78,34 @@
           <button id="readyBtn" class="primary" disabled>Ready</button>
           <div id="readyHint" class="ready-hint"></div>
         </div>
+        <div class="bandpower-card">
+          <div class="bandpower-head">
+            <div class="bandpower-title">Live Bandpower</div>
+            <label class="toggle">
+              <input id="followActive" type="checkbox" checked />
+              <span>Follow active location</span>
+            </label>
+            <label>
+              Location
+              <select id="bandLoc">
+                <option value="Cz">Cz</option>
+                <option value="O1">O1</option>
+                <option value="Fz">Fz</option>
+                <option value="F3">F3</option>
+                <option value="F4">F4</option>
+              </select>
+            </label>
+          </div>
+          <div class="bandpower-legend">
+            <label class="toggle"><input id="bandDelta" type="checkbox" /> <span>Delta</span></label>
+            <label class="toggle"><input id="bandTheta" type="checkbox" checked /> <span>Theta</span></label>
+            <label class="toggle"><input id="bandAlpha" type="checkbox" checked /> <span>Alpha</span></label>
+            <label class="toggle"><input id="bandBeta" type="checkbox" checked /> <span>Beta</span></label>
+            <label class="toggle"><input id="bandHiBeta" type="checkbox" /> <span>HiBeta</span></label>
+          </div>
+          <canvas id="bandCanvas" class="bandpower-canvas"></canvas>
+          <div id="bandValues" class="band-values"></div>
+        </div>
         <div class="event-scroll" id="eventLog"></div>
       </section>
 
