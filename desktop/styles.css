@@ -6,6 +6,7 @@
   --danger: #a9302f;
   --ok: #1f7d48;
   --warn: #9b5b00;
+  --muted: #5b6871;
   --line: #d3d8dc;
 }
 
@@ -181,6 +182,23 @@ button.danger {
   min-height: 1.6em;
 }
 
+.ready-row {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ready-row button {
+  padding: 8px 12px;
+}
+
+.ready-hint {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
 .event-scroll {
   margin-top: 10px;
   max-height: 320px;
@@ -295,4 +313,3 @@ tr.in td {
     grid-template-columns: repeat(2, minmax(120px, 1fr));
   }
 }
-

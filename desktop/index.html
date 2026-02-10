@@ -50,6 +50,10 @@
             <input id="includeFrontalBaseline" type="checkbox" checked />
             <span>Extra frontal EC baseline in simultaneous mode</span>
           </label>
+          <label class="toggle">
+            <input id="manualReposition" type="checkbox" checked />
+            <span>Manual advance between locations (sequential)</span>
+          </label>
         </div>
 
         <h3>Channel Map (BrainFlow EEG index)</h3>
@@ -70,6 +74,10 @@
       <section class="panel live">
         <h2>Live Guidance</h2>
         <div id="liveEvent" class="live-event">Waiting to start.</div>
+        <div class="ready-row">
+          <button id="readyBtn" class="primary" disabled>Ready</button>
+          <div id="readyHint" class="ready-hint"></div>
+        </div>
         <div class="event-scroll" id="eventLog"></div>
       </section>
 
@@ -99,4 +107,3 @@
     <script src="renderer.js"></script>
   </body>
 </html>
-

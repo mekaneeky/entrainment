@@ -201,6 +201,7 @@ def _analyze_cz(conditions: Dict[str, Dict[str, float]]) -> List[MetricResult]:
     theta_smr = _safe_div(ec.get("theta", 0.0), ec.get("smr", 0.0))
     tb_eo = _safe_div(eo.get("theta", 0.0), eo.get("beta", 0.0))
     tb_ut = _safe_div(ut.get("theta", 0.0), ut.get("beta", 0.0))
+    beta_activation = _pct_change(ut.get("beta", 0.0), eo.get("beta", 0.0))
     beta_fatigue = _pct_drop(eo.get("beta", 0.0), ut.get("beta", 0.0))
     tb_challenge_shift = _pct_drop(tb_eo, tb_ut)
     theta_omni_change = _pct_change(omni.get("theta", 0.0), eo.get("theta", 0.0))
@@ -289,6 +290,19 @@ def _analyze_cz(conditions: Dict[str, Dict[str, float]]) -> List[MetricResult]:
         )
     )
 
+    status = _status_for_lt(beta_activation, 20.0)
+    out.append(
+        _as_metric(
+            "Cz",
+            "Beta activation %",
+            beta_activation,
+            "< 20%",
+            status,
+            "If >20%, ask about over-arousal/anxiety under cognitive load." if status == "OUT_OF_RANGE" else "",
+            "(Beta_UT - Beta_EO) / Beta_EO * 100",
+        )
+    )
+
     status = _status_for_lt(tb_challenge_shift, 15.0)
     out.append(
         _as_metric(
@@ -374,7 +388,7 @@ def _analyze_o1(conditions: Dict[str, Dict[str, float]]) -> List[MetricResult]:
     alpha_recovery = _pct_drop(eo.get("alpha", 0.0), eo_after.get("alpha", 0.0))
     tb_eo = _safe_div(eo.get("theta", 0.0), eo.get("beta", 0.0))
     tb_ec = _safe_div(ec.get("theta", 0.0), ec.get("beta", 0.0))
-    tb_shift = _pct_change(tb_ec, tb_eo)
+    tb_shift = _pct_drop(tb_eo, tb_ec)
     total_amp_ec = ec.get("total_amp_basic", float("nan"))
     peak_alpha_ec = ec.get("peak_alpha", float("nan"))
     peak_alpha_eo = eo.get("peak_alpha", float("nan"))
@@ -443,7 +457,7 @@ def _analyze_o1(conditions: Dict[str, Dict[str, float]]) -> List[MetricResult]:
     if status == "OUT_OF_RANGE":
         probe = "If < -25%, ask about sleep-onset difficulties."
     elif tb_shift > 0:
-        probe = "Positive value indicates theta/beta increased from EO to EC."
+        probe = "Positive value indicates theta/beta decreased from EO to EC."
     out.append(
         _as_metric(
             "O1",
@@ -452,7 +466,7 @@ def _analyze_o1(conditions: Dict[str, Dict[str, float]]) -> List[MetricResult]:
             "> -25%",
             status,
             probe,
-            "(T/B_EC - T/B_EO) / (T/B_EO) * 100",
+            "(T/B_EO - T/B_EC) / (T/B_EO) * 100",
         )
     )
 
@@ -708,4 +722,3 @@ def session_result_to_dict(result: SessionResult) -> Dict[str, Any]:
         "summary": result.summary,
         "derived": result.derived,
     }
-

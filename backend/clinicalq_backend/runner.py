@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import copy
+import json
+import sys
 import time
 from dataclasses import asdict
 from typing import Any, Dict, Iterable, List
@@ -12,6 +14,7 @@ from clinicalq_backend.protocol import CZ_SEQUENCE, EC_SINGLE_SEQUENCE, O1_SEQUE
 from clinicalq_backend.types import EpochCapture, EpochSpec, EventCallback
 
 DEFAULT_CHANNELS = {"Cz": 1, "O1": 2, "Fz": 3, "F3": 4, "F4": 5}
+REQUIRED_LOCATIONS = ["O1", "Cz", "Fz", "F3", "F4"]
 
 
 def _emit(event_cb: EventCallback | None, event: str, **payload: Any) -> None:
@@ -24,6 +27,27 @@ def _resolve_channels(config: Dict[str, Any]) -> Dict[str, int]:
     merged = dict(DEFAULT_CHANNELS)
     merged.update({k: int(v) for k, v in config.get("channels", {}).items()})
     return merged
+
+
+def _validate_required_channels(channels: Dict[str, int]) -> None:
+    missing = [loc for loc in REQUIRED_LOCATIONS if loc not in channels]
+    if missing:
+        raise RuntimeError(f"Missing required channel mappings: {', '.join(missing)}")
+
+    invalid = [loc for loc in REQUIRED_LOCATIONS if int(channels.get(loc, 0)) <= 0]
+    if invalid:
+        raise RuntimeError(f"Invalid channel index (must be >= 1) for: {', '.join(invalid)}")
+
+    seen: Dict[int, str] = {}
+    duplicates: List[str] = []
+    for loc in REQUIRED_LOCATIONS:
+        ch = int(channels[loc])
+        if ch in seen:
+            duplicates.append(f"{seen[ch]} and {loc} both map to channel {ch}")
+        else:
+            seen[ch] = loc
+    if duplicates:
+        raise RuntimeError("Duplicate channel mappings are not allowed: " + "; ".join(duplicates))
 
 
 def _resolve_sequence(location: str) -> List[EpochSpec]:
@@ -108,12 +132,48 @@ def _countdown(event_cb: EventCallback | None, event: str, seconds: int, **paylo
         time.sleep(1.0)
 
 
+def _wait_for_ready(event_cb: EventCallback | None, next_location: str) -> None:
+    _emit(
+        event_cb,
+        "reposition_waiting",
+        next_location=next_location,
+        message='Waiting for user readiness. Send {"command":"ready"} on stdin (one JSON line) to continue.',
+    )
+    while True:
+        line = sys.stdin.readline()
+        if line == "":  # EOF - avoid deadlock in non-interactive runs.
+            _emit(event_cb, "reposition_input_eof", next_location=next_location)
+            return
+        text = line.strip()
+        if not text:
+            continue
+
+        lowered = text.lower()
+        if lowered in {"ready", "r", "ok", "next"}:
+            return
+
+        try:
+            cmd = json.loads(text)
+        except json.JSONDecodeError:
+            continue
+
+        if isinstance(cmd, dict) and cmd.get("command") == "ready":
+            requested = cmd.get("next_location")
+            if requested in (None, "", next_location):
+                return
+
+
 def run_session(config: Dict[str, Any], event_cb: EventCallback | None = None) -> Dict[str, Any]:
     mode = str(config.get("mode", "sequential")).lower()
     epoch_seconds = int(config.get("epoch_seconds", 15))
     reposition_seconds = int(config.get("reposition_seconds", 20))
     fast_mode = bool(config.get("fast_mode", False))
+    reposition_mode = str(config.get("reposition_mode", "timer")).lower()
     channels = _resolve_channels(config)
+    _validate_required_channels(channels)
+
+    if reposition_mode not in {"timer", "manual"}:
+        raise RuntimeError(f"Unsupported reposition_mode: {reposition_mode}. Use 'timer' or 'manual'.")
 
     board = create_board(config)
     _emit(event_cb, "session_start", mode=mode)
@@ -129,7 +189,7 @@ def run_session(config: Dict[str, Any], event_cb: EventCallback | None = None) -
             if bool(config.get("include_frontal_baseline", True)):
                 sequence.extend(_apply_epoch_seconds(SIMULTANEOUS_EXTRA, epoch_seconds))
 
-            active_locations = [loc for loc in ["Cz", "O1", "Fz", "F3", "F4"] if loc in channels]
+            active_locations = ["Cz", "O1", "Fz", "F3", "F4"]
             _emit(event_cb, "sequence_start", sequence="MASTER", locations=active_locations, total_epochs=len(sequence))
 
             for spec in sequence:
@@ -139,28 +199,44 @@ def run_session(config: Dict[str, Any], event_cb: EventCallback | None = None) -
 
         elif mode == "sequential":
             order = config.get("sequential_order") or list(SEQUENTIAL_ORDER)
-            order = [str(loc) for loc in order if str(loc) in channels]
-            if not order:
-                raise RuntimeError("No valid locations configured for sequential mode.")
+            order = [str(loc) for loc in order]
+            if len(order) != len(REQUIRED_LOCATIONS) or set(order) != set(REQUIRED_LOCATIONS):
+                raise RuntimeError(
+                    "Sequential mode must record all required sites exactly once: " + ", ".join(REQUIRED_LOCATIONS)
+                )
 
             for idx, location in enumerate(order):
                 sequence = _apply_epoch_seconds(_resolve_sequence(location), epoch_seconds)
 
                 if idx > 0:
-                    _emit(
-                        event_cb,
-                        "reposition_start",
-                        next_location=location,
-                        seconds=0 if fast_mode else reposition_seconds,
-                        message=f"Move active electrode to {location}.",
-                    )
-                    _countdown(
-                        event_cb,
-                        event="reposition_tick",
-                        seconds=0 if fast_mode else reposition_seconds,
-                        next_location=location,
-                    )
-                    _emit(event_cb, "reposition_complete", next_location=location)
+                    if reposition_mode == "manual":
+                        _emit(
+                            event_cb,
+                            "reposition_start",
+                            next_location=location,
+                            mode="manual",
+                            seconds=None,
+                            message=f"Move active electrode to {location}, then press Ready in the app.",
+                        )
+                        _wait_for_ready(event_cb, location)
+                        _emit(event_cb, "reposition_complete", next_location=location, mode="manual")
+                    else:
+                        seconds = 0 if fast_mode else reposition_seconds
+                        _emit(
+                            event_cb,
+                            "reposition_start",
+                            next_location=location,
+                            mode="timer",
+                            seconds=seconds,
+                            message=f"Move active electrode to {location}.",
+                        )
+                        _countdown(
+                            event_cb,
+                            event="reposition_tick",
+                            seconds=seconds,
+                            next_location=location,
+                        )
+                        _emit(event_cb, "reposition_complete", next_location=location, mode="timer")
 
                 _emit(event_cb, "sequence_start", sequence=location, locations=[location], total_epochs=len(sequence))
                 for spec in sequence:
@@ -194,4 +270,3 @@ def run_session(config: Dict[str, Any], event_cb: EventCallback | None = None) -
     )
 
     return result
-

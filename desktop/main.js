@@ -120,6 +120,18 @@ ipcMain.handle("stop-session", () => {
   return { stopped: true };
 });
 
+ipcMain.handle("send-command", (_event, command) => {
+  if (!activeRun || !activeRun.child || activeRun.child.killed || !activeRun.child.stdin) {
+    return { ok: false, message: "No active session." };
+  }
+  try {
+    activeRun.child.stdin.write(`${JSON.stringify(command)}\n`);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, message: err?.message || String(err) };
+  }
+});
+
 app.whenReady().then(() => {
   createWindow();
   app.on("activate", () => {
@@ -136,4 +148,3 @@ app.on("before-quit", () => {
     activeRun.child.kill("SIGTERM");
   }
 });
-

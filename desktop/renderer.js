@@ -6,6 +6,7 @@ const refs = {
   useSynthetic: document.getElementById("useSynthetic"),
   fastMode: document.getElementById("fastMode"),
   includeFrontalBaseline: document.getElementById("includeFrontalBaseline"),
+  manualReposition: document.getElementById("manualReposition"),
   chCz: document.getElementById("chCz"),
   chO1: document.getElementById("chO1"),
   chFz: document.getElementById("chFz"),
@@ -13,6 +14,8 @@ const refs = {
   chF4: document.getElementById("chF4"),
   startBtn: document.getElementById("startBtn"),
   stopBtn: document.getElementById("stopBtn"),
+  readyBtn: document.getElementById("readyBtn"),
+  readyHint: document.getElementById("readyHint"),
   pythonStatus: document.getElementById("pythonStatus"),
   liveEvent: document.getElementById("liveEvent"),
   eventLog: document.getElementById("eventLog"),
@@ -22,6 +25,7 @@ const refs = {
 };
 
 let running = false;
+let pendingReadyLocation = null;
 
 function nowStamp() {
   return new Date().toLocaleTimeString();
@@ -50,6 +54,19 @@ function clearResults() {
   refs.resultsTableBody.innerHTML = "";
   refs.probeList.innerHTML = "";
   refs.summary.textContent = "Running session...";
+}
+
+function setReadyState(location) {
+  pendingReadyLocation = location || null;
+  if (pendingReadyLocation) {
+    refs.readyBtn.disabled = false;
+    refs.readyBtn.textContent = `Ready: ${pendingReadyLocation}`;
+    refs.readyHint.textContent = "After moving the electrode, click Ready to continue.";
+  } else {
+    refs.readyBtn.disabled = true;
+    refs.readyBtn.textContent = "Ready";
+    refs.readyHint.textContent = "";
+  }
 }
 
 function renderResults(payload) {
@@ -108,10 +125,13 @@ function setRunningState(isRunning) {
 }
 
 function buildConfig() {
+  const isSequential = refs.mode.value === "sequential";
+  const manualAdvance = isSequential && refs.manualReposition.checked;
   return {
     mode: refs.mode.value,
     epoch_seconds: Number(refs.epochSeconds.value || 15),
     reposition_seconds: Number(refs.repositionSeconds.value || 20),
+    reposition_mode: manualAdvance ? "manual" : "timer",
     sampling_rate: 250,
     fast_mode: refs.fastMode.checked,
     include_frontal_baseline: refs.includeFrontalBaseline.checked,
@@ -153,9 +173,16 @@ function summarizeEvent(event) {
     case "epoch_complete":
       return `${event.sequence} E${event.index} ${event.label} captured.`;
     case "reposition_start":
+      if (event.mode === "manual") {
+        return `Reposition electrode to ${event.next_location}, then click Ready.`;
+      }
       return `Reposition electrode to ${event.next_location}.`;
     case "reposition_tick":
       return `Reposition countdown: ${event.seconds_remaining}s`;
+    case "reposition_waiting":
+      return `Waiting for readiness: ${event.next_location}`;
+    case "reposition_input_eof":
+      return `No stdin available; proceeding to ${event.next_location}.`;
     case "reposition_complete":
       return `Reposition complete: ${event.next_location}`;
     case "analysis_complete":
@@ -174,6 +201,19 @@ function summarizeEvent(event) {
 }
 
 window.clinicalQ.onSessionEvent((event) => {
+  if (event.event === "session_start") {
+    setReadyState(null);
+  }
+  if (event.event === "reposition_start" && event.mode === "manual") {
+    setReadyState(event.next_location);
+  }
+  if (event.event === "reposition_complete") {
+    setReadyState(null);
+  }
+  if (event.event === "session_complete" || event.event === "error" || event.event === "session_stopped") {
+    setReadyState(null);
+  }
+
   const text = summarizeEvent(event);
   appendEventRow(text);
   refs.liveEvent.textContent = text;
@@ -183,6 +223,7 @@ refs.startBtn.addEventListener("click", async () => {
   if (running) return;
 
   setRunningState(true);
+  setReadyState(null);
   clearResults();
 
   try {
@@ -203,10 +244,32 @@ refs.stopBtn.addEventListener("click", async () => {
   if (!running) return;
   const result = await window.clinicalQ.stopSession();
   appendEventRow(result.stopped ? "Stop signal sent." : `Stop ignored: ${result.reason}`);
+  setReadyState(null);
   setRunningState(false);
 });
+
+refs.readyBtn.addEventListener("click", async () => {
+  if (!pendingReadyLocation) return;
+  const response = await window.clinicalQ.sendCommand({ command: "ready", next_location: pendingReadyLocation });
+  if (response?.ok) {
+    refs.readyBtn.disabled = true;
+    refs.readyHint.textContent = `Ready sent for ${pendingReadyLocation}.`;
+  } else {
+    appendEventRow(`Ready failed: ${response?.message || "unknown error"}`);
+  }
+});
+
+function syncRepositionUi() {
+  const isSequential = refs.mode.value === "sequential";
+  refs.manualReposition.disabled = !isSequential;
+  const manual = isSequential && refs.manualReposition.checked;
+  refs.repositionSeconds.disabled = manual;
+}
+
+refs.mode.addEventListener("change", syncRepositionUi);
+refs.manualReposition.addEventListener("change", syncRepositionUi);
+syncRepositionUi();
 
 checkPython().catch((err) => {
   refs.pythonStatus.textContent = `Runtime check failed: ${err.message || err}`;
 });
-

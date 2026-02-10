@@ -12,6 +12,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "mode": "sequential",
     "epoch_seconds": 15,
     "reposition_seconds": 20,
+    "reposition_mode": "timer",
     "sampling_rate": 250,
     "fast_mode": False,
     "include_frontal_baseline": True,
@@ -98,4 +99,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-
