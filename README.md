@@ -19,6 +19,18 @@ python -m venv ..\\eeg
 ..\\eeg\\Scripts\\python -m pip install -e .[openbci,dev]
 ```
 
+If PowerShell blocks activation (`Activate.ps1 cannot be loaded`), you do not need to activate the venv. Just run the venv's Python directly:
+
+```powershell
+..\\eeg\\Scripts\\python -m clinicalq_backend.cli --help
+```
+
+Optional (enables `.\\eeg\\Scripts\\Activate.ps1`): run PowerShell as your user and set:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
 Run a simulated session:
 
 ```powershell
@@ -35,3 +47,8 @@ cmd /c npm install
 cmd /c npm start
 ```
 
+To ensure Electron uses the venv Python backend, set:
+
+```powershell
+$env:CLINICALQ_PYTHON = "C:\\entrainment\\eeg\\Scripts\\python.exe"
+```
