@@ -7,6 +7,8 @@ const refs = {
   fastMode: document.getElementById("fastMode"),
   includeFrontalBaseline: document.getElementById("includeFrontalBaseline"),
   manualReposition: document.getElementById("manualReposition"),
+  soundCues: document.getElementById("soundCues"),
+  cueLead: document.getElementById("cueLead"),
   chCz: document.getElementById("chCz"),
   chO1: document.getElementById("chO1"),
   chFz: document.getElementById("chFz"),
@@ -27,6 +29,8 @@ const refs = {
   bandValues: document.getElementById("bandValues"),
   pythonStatus: document.getElementById("pythonStatus"),
   liveEvent: document.getElementById("liveEvent"),
+  cueBanner: document.getElementById("cueBanner"),
+  countdown: document.getElementById("countdown"),
   eventLog: document.getElementById("eventLog"),
   resultsTableBody: document.querySelector("#resultsTable tbody"),
   summary: document.getElementById("summary"),
@@ -36,6 +40,10 @@ const refs = {
 let running = false;
 let pendingReadyLocation = null;
 let activeLocation = null;
+let audioCtx = null;
+let epochContext = null;
+let nextWarnedEpochKey = null;
+let lastEpochLabel = null;
 
 const BAND_META = {
   delta: { label: "Delta", color: "#a9302f" },
@@ -58,6 +66,82 @@ const bandState = {
     F4: {},
   },
 };
+
+function shouldLogEvent(name) {
+  return !["epoch_tick", "reposition_tick", "bandpower"].includes(String(name || ""));
+}
+
+function cueLeadSeconds() {
+  const value = Number(refs.cueLead?.value);
+  if (!Number.isFinite(value)) return 3;
+  return Math.max(0, Math.min(10, Math.floor(value)));
+}
+
+function ensureAudio() {
+  if (audioCtx) return audioCtx;
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) return null;
+  audioCtx = new Ctx();
+  return audioCtx;
+}
+
+async function warmAudio() {
+  if (!refs.soundCues?.checked) return;
+  const ctx = ensureAudio();
+  if (!ctx) return;
+  try {
+    if (ctx.state === "suspended") {
+      await ctx.resume();
+    }
+  } catch {
+    // ignore - some environments disallow resuming outside a gesture
+  }
+}
+
+function beepOnce(freq, durationSec) {
+  if (!refs.soundCues?.checked) return;
+  const ctx = ensureAudio();
+  if (!ctx) return;
+  if (ctx.state === "suspended") {
+    // Best effort - if it fails, user can toggle cues off.
+    ctx.resume().catch(() => undefined);
+  }
+
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "sine";
+  osc.frequency.value = freq;
+  gain.gain.value = 0.04;
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime + durationSec);
+}
+
+function cuePattern(label) {
+  const normalized = String(label || "").toUpperCase();
+  if (normalized === "EO") return { freq: 660, count: 1 };
+  if (normalized === "EC" || normalized === "FRONTAL_EC") return { freq: 440, count: 2 };
+  if (["READ", "COUNT", "OMNI", "TEST", "HARMONIC"].includes(normalized)) return { freq: 880, count: 3 };
+  return { freq: 520, count: 1 };
+}
+
+function playCue(label) {
+  const pat = cuePattern(label);
+  for (let i = 0; i < pat.count; i += 1) {
+    window.setTimeout(() => beepOnce(pat.freq, 0.12), i * 160);
+  }
+}
+
+function setCueBanner(text) {
+  if (!refs.cueBanner) return;
+  refs.cueBanner.textContent = text || "";
+}
+
+function setCountdown(text) {
+  if (!refs.countdown) return;
+  refs.countdown.textContent = text || "";
+}
 
 function resetBandState(epochKey) {
   bandState.epochKey = epochKey;
@@ -107,6 +191,11 @@ function setReadyState(location) {
     refs.readyBtn.textContent = "Ready";
     refs.readyHint.textContent = "";
   }
+}
+
+function epochKey(event) {
+  if (!event) return "";
+  return `${event.sequence}-${event.index}-${event.label}`;
 }
 
 function renderResults(payload) {
@@ -371,12 +460,26 @@ function syncBandpowerUi() {
 window.clinicalQ.onSessionEvent((event) => {
   if (event.event === "session_start") {
     setReadyState(null);
+    epochContext = null;
+    nextWarnedEpochKey = null;
+    lastEpochLabel = null;
+    setCueBanner("");
+    setCountdown("");
     bandState.sequence = null;
     bandState.index = null;
     bandState.label = null;
     resetBandState(`${Date.now()}`);
   }
   if (event.event === "epoch_start") {
+    epochContext = event;
+    nextWarnedEpochKey = null;
+    setCueBanner(`NOW: ${event.label} | ${event.instruction || ""}`);
+    if (lastEpochLabel !== event.label) {
+      playCue(event.label);
+      lastEpochLabel = event.label;
+    }
+    setCountdown(`${event.sequence} E${event.index} ${event.label}: ${event.seconds}s`);
+
     bandState.sequence = event.sequence;
     bandState.index = event.index;
     bandState.label = event.label;
@@ -386,6 +489,24 @@ window.clinicalQ.onSessionEvent((event) => {
       if (refs.bandLoc) refs.bandLoc.value = activeLocation;
     }
     syncBandpowerUi();
+  }
+  if (event.event === "epoch_tick") {
+    setCountdown(`${event.sequence} E${event.index} ${event.label}: ${event.seconds_remaining}s remaining`);
+
+    const lead = cueLeadSeconds();
+    if (lead > 0 && Number(event.seconds_remaining) === lead && epochContext) {
+      const ctxKey = epochKey(epochContext);
+      const nextEpoch = epochContext.next_epoch;
+      if (
+        nextEpoch &&
+        nextWarnedEpochKey !== ctxKey &&
+        String(nextEpoch.label || "") !== String(epochContext.label || "")
+      ) {
+        nextWarnedEpochKey = ctxKey;
+        setCueBanner(`UP NEXT: ${nextEpoch.label} | ${nextEpoch.instruction || ""}`);
+        playCue(nextEpoch.label);
+      }
+    }
   }
   if (event.event === "bandpower") {
     const features = event.features || {};
@@ -401,17 +522,32 @@ window.clinicalQ.onSessionEvent((event) => {
   }
   if (event.event === "reposition_start" && event.mode === "manual") {
     setReadyState(event.next_location);
+    setCueBanner(`MOVE ELECTRODE: ${event.next_location} | Click Ready when stable.`);
+    setCountdown("");
+  }
+  if (event.event === "reposition_start" && event.mode === "timer") {
+    setCueBanner(`MOVE ELECTRODE: ${event.next_location}`);
+    setCountdown("");
+  }
+  if (event.event === "reposition_tick") {
+    setCountdown(`Reposition: ${event.seconds_remaining}s`);
   }
   if (event.event === "reposition_complete") {
     setReadyState(null);
+    setCountdown("");
   }
   if (event.event === "session_complete" || event.event === "error" || event.event === "session_stopped") {
     setReadyState(null);
+    setCountdown("");
   }
 
   const text = summarizeEvent(event);
-  appendEventRow(text);
-  refs.liveEvent.textContent = text;
+  if (shouldLogEvent(event.event)) {
+    appendEventRow(text);
+  }
+  if (!["epoch_tick", "reposition_tick", "bandpower"].includes(event.event)) {
+    refs.liveEvent.textContent = text;
+  }
 });
 
 refs.startBtn.addEventListener("click", async () => {
@@ -419,9 +555,12 @@ refs.startBtn.addEventListener("click", async () => {
 
   setRunningState(true);
   setReadyState(null);
+  setCueBanner("");
+  setCountdown("");
   clearResults();
 
   try {
+    await warmAudio();
     const config = buildConfig();
     const payload = await window.clinicalQ.startSession(config);
     renderResults(payload.result);

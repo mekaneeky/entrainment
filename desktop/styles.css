@@ -124,6 +124,14 @@ label {
   font-size: 0.93rem;
 }
 
+.help {
+  margin: -4px 0 6px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.25rem;
+  max-width: 70ch;
+}
+
 .toggle {
   flex-direction: row;
   align-items: center;
@@ -180,6 +188,27 @@ button.danger {
   font-weight: 800;
   color: #173341;
   min-height: 1.6em;
+}
+
+.cue-banner {
+  margin-top: 10px;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: linear-gradient(110deg, rgba(13, 158, 180, 0.12), rgba(155, 91, 0, 0.08), rgba(31, 125, 72, 0.08));
+  color: #102630;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.countdown {
+  margin-top: 6px;
+  color: var(--muted);
+  font-weight: 800;
+  font-size: 0.92rem;
 }
 
 .ready-row {

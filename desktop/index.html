@@ -48,11 +48,22 @@
           </label>
           <label class="toggle">
             <input id="includeFrontalBaseline" type="checkbox" checked />
-            <span>Extra frontal EC baseline in simultaneous mode</span>
+            <span>Extra dedicated frontal EC baseline (simultaneous)</span>
           </label>
+          <div class="help">
+            If off, frontal (Fz/F3/F4) EC metrics use the earlier EC epoch from the main sequence. Keeping it on adds a clean extra EC segment for redundancy.
+          </div>
           <label class="toggle">
             <input id="manualReposition" type="checkbox" checked />
             <span>Manual advance between locations (sequential)</span>
+          </label>
+          <label class="toggle">
+            <input id="soundCues" type="checkbox" checked />
+            <span>Sound cues for EO/EC/tasks</span>
+          </label>
+          <label>
+            Cue lead (sec)
+            <input id="cueLead" type="number" min="0" max="10" value="3" />
           </label>
         </div>
 
@@ -74,6 +85,8 @@
       <section class="panel live">
         <h2>Live Guidance</h2>
         <div id="liveEvent" class="live-event">Waiting to start.</div>
+        <div id="cueBanner" class="cue-banner"></div>
+        <div id="countdown" class="countdown"></div>
         <div class="ready-row">
           <button id="readyBtn" class="primary" disabled>Ready</button>
           <div id="readyHint" class="ready-hint"></div>

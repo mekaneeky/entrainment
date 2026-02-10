@@ -80,7 +80,18 @@ def _capture_epoch(
     fast_mode: bool,
     live_bandpower: bool,
     live_window_seconds: float,
+    next_spec: EpochSpec | None,
 ) -> EpochCapture:
+    next_epoch = None
+    if next_spec is not None:
+        next_epoch = {
+            "sequence": sequence_name,
+            "index": int(next_spec.index),
+            "label": str(next_spec.label),
+            "instruction": str(next_spec.instruction),
+            "seconds": int(next_spec.seconds),
+        }
+
     _emit(
         event_cb,
         "epoch_start",
@@ -90,7 +101,8 @@ def _capture_epoch(
         instruction=spec.instruction,
         seconds=spec.seconds,
         locations=active_locations,
-        )
+        next_epoch=next_epoch,
+    )
 
     def _emit_tick(seconds_remaining: int) -> None:
         _emit(
@@ -262,7 +274,8 @@ def run_session(config: Dict[str, Any], event_cb: EventCallback | None = None) -
             active_locations = ["Cz", "O1", "Fz", "F3", "F4"]
             _emit(event_cb, "sequence_start", sequence="MASTER", locations=active_locations, total_epochs=len(sequence))
 
-            for spec in sequence:
+            for i, spec in enumerate(sequence):
+                next_spec = sequence[i + 1] if i + 1 < len(sequence) else None
                 captures.append(
                     _capture_epoch(
                         board,
@@ -274,6 +287,7 @@ def run_session(config: Dict[str, Any], event_cb: EventCallback | None = None) -
                         fast_mode=fast_mode,
                         live_bandpower=live_bandpower,
                         live_window_seconds=live_window_seconds,
+                        next_spec=next_spec,
                     )
                 )
 
@@ -321,7 +335,8 @@ def run_session(config: Dict[str, Any], event_cb: EventCallback | None = None) -
                         _emit(event_cb, "reposition_complete", next_location=location, mode="timer")
 
                 _emit(event_cb, "sequence_start", sequence=location, locations=[location], total_epochs=len(sequence))
-                for spec in sequence:
+                for j, spec in enumerate(sequence):
+                    next_spec = sequence[j + 1] if j + 1 < len(sequence) else None
                     captures.append(
                         _capture_epoch(
                             board,
@@ -333,6 +348,7 @@ def run_session(config: Dict[str, Any], event_cb: EventCallback | None = None) -
                             fast_mode=fast_mode,
                             live_bandpower=live_bandpower,
                             live_window_seconds=live_window_seconds,
+                            next_spec=next_spec,
                         )
                     )
                 _emit(event_cb, "sequence_complete", sequence=location)
