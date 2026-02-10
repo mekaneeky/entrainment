@@ -210,11 +210,20 @@ function renderResults(payload) {
     tr.className = metric.status === "OUT_OF_RANGE" ? "out" : metric.status === "IN_RANGE" ? "in" : "";
 
     const badge = statusBadge(metric.status);
-    const cells = [metric.location, metric.metric, formatValue(metric.value), metric.normal_range, "", metric.probe || ""];
+    const cells = [
+      metric.location,
+      metric.metric,
+      formatValue(metric.value),
+      formatValue(metric.left_value),
+      formatValue(metric.right_value),
+      metric.normal_range,
+      "",
+      metric.probe || "",
+    ];
 
     cells.forEach((value, idx) => {
       const td = document.createElement("td");
-      if (idx === 4) {
+      if (idx === 6) {
         const span = document.createElement("span");
         span.className = `badge ${badge.cls}`;
         span.textContent = badge.text;

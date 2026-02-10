@@ -34,6 +34,8 @@ class MetricResult:
     status: str
     probe: str
     formula: str
+    left_value: float | None = None
+    right_value: float | None = None
 
 
 @dataclass(slots=True)
@@ -42,4 +44,3 @@ class SessionResult:
     metrics: List[MetricResult]
     summary: Dict[str, Any]
     derived: Dict[str, Any] = field(default_factory=dict)
-

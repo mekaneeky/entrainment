@@ -61,11 +61,16 @@ def _as_metric(
     status: str,
     probe: str,
     formula: str,
+    *,
+    left_value: float | None = None,
+    right_value: float | None = None,
 ) -> MetricResult:
     return MetricResult(
         location=location,
         metric=metric,
         value=float(value) if not math.isnan(value) else float("nan"),
+        left_value=None if left_value is None or math.isnan(float(left_value)) else float(left_value),
+        right_value=None if right_value is None or math.isnan(float(right_value)) else float(right_value),
         normal_range=normal_range,
         status=status,
         probe=probe,
@@ -567,19 +572,22 @@ def _analyze_frontal_pair(f3: Dict[str, float], f4: Dict[str, float]) -> List[Me
         f3v = f3.get(band, float("nan"))
         f4v = f4.get(band, float("nan"))
         mean_v = np.nanmean([f3v, f4v])
-        asym = float("nan") if mean_v == 0 or math.isnan(mean_v) else abs(f4v - f3v) / mean_v * 100.0
-        status = "MISSING" if math.isnan(asym) else ("IN_RANGE" if asym <= 15.0 else "OUT_OF_RANGE")
+        signed = float("nan") if mean_v == 0 or math.isnan(mean_v) else (f4v - f3v) / mean_v * 100.0
+        abs_diff = float("nan") if math.isnan(signed) else abs(signed)
+        status = "MISSING" if math.isnan(abs_diff) else ("IN_RANGE" if abs_diff <= 15.0 else "OUT_OF_RANGE")
         out.append(
             _as_metric(
                 "F3/F4",
                 f"{band.title()} asymmetry %",
-                asym,
-                "<= 15% diff (practical equality check)",
+                signed,
+                "abs(diff) <= 15% (parity check)",
                 status,
                 "Frontal asymmetry exceeds expected parity; correlate with executive/emotional regulation history."
                 if status == "OUT_OF_RANGE"
                 else "",
-                f"abs(F4_{band} - F3_{band}) / mean(F3_{band}, F4_{band}) * 100",
+                f"(F4_{band} - F3_{band}) / mean(F3_{band}, F4_{band}) * 100 (status uses abs)",
+                left_value=f3v,
+                right_value=f4v,
             )
         )
 
