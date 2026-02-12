@@ -1,0 +1,870 @@
+{
+  "metadata": {
+    "mode": "sequential",
+    "sampling_rate": 250,
+    "epoch_seconds": 15,
+    "channels": {
+      "Cz": 1,
+      "O1": 2,
+      "Fz": 3,
+      "F3": 4,
+      "F4": 5
+    }
+  },
+  "metrics": [
+    {
+      "location": "Cz",
+      "metric": "Alpha response %",
+      "value": 77.13995777647659,
+      "normal_range": "> 30%",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "(Alpha_EC - Alpha_EO) / Alpha_EO * 100"
+    },
+    {
+      "location": "Cz",
+      "metric": "Alpha recovery %",
+      "value": 0.48555052200227417,
+      "normal_range": "< 25%",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "(Alpha_EO_before - Alpha_EO_after) / Alpha_EO_before * 100"
+    },
+    {
+      "location": "Cz",
+      "metric": "Theta/SMR (EC)",
+      "value": 24.264074276654796,
+      "normal_range": "< 3.0",
+      "status": "OUT_OF_RANGE",
+      "probe": "Ask about inability to sit still, sleep onset issues, headaches/chronic pain, tremor, dystonia, and motor-linked seizure features.",
+      "formula": "Theta_EC / SMR_EC"
+    },
+    {
+      "location": "Cz",
+      "metric": "Theta/Beta (EO)",
+      "value": 1.4483471970816066,
+      "normal_range": "< 2.2",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "Theta_EO / Beta_EO"
+    },
+    {
+      "location": "Cz",
+      "metric": "Theta/Beta (UT)",
+      "value": 2.298973167947463,
+      "normal_range": "< 2.2",
+      "status": "OUT_OF_RANGE",
+      "probe": "Ask about CADD traits and fatigue under cognitive load. | If EO is normal but task ratio is high, ask about reading comprehension/retention and task fatigue.",
+      "formula": "Theta_UT / Beta_UT"
+    },
+    {
+      "location": "Cz",
+      "metric": "Beta fatigue %",
+      "value": 20.061536839835405,
+      "normal_range": "< 15%",
+      "status": "OUT_OF_RANGE",
+      "probe": "Ask whether reading/problem solving quickly causes fatigue.",
+      "formula": "(Beta_EO - Beta_UT) / Beta_EO * 100"
+    },
+    {
+      "location": "Cz",
+      "metric": "Beta activation %",
+      "value": -20.061536839835405,
+      "normal_range": "< 20%",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "(Beta_UT - Beta_EO) / Beta_EO * 100"
+    },
+    {
+      "location": "Cz",
+      "metric": "T/B challenge shift %",
+      "value": -58.73080519504249,
+      "normal_range": "< 15%",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "(T/B_EO - T/B_UT) / (T/B_EO) * 100"
+    },
+    {
+      "location": "Cz",
+      "metric": "Theta Omni % change",
+      "value": -15.933821566218823,
+      "normal_range": "< -5%",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "(Theta_Omni - Theta_EO) / Theta_EO * 100"
+    },
+    {
+      "location": "Cz",
+      "metric": "Total amplitude (EC)",
+      "value": 20.93929248359612,
+      "normal_range": "< 60 uV",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "Theta_EC + Alpha_EC + Beta_EC"
+    },
+    {
+      "location": "Cz",
+      "metric": "Peak alpha frequency (EC)",
+      "value": 10.133333333333333,
+      "normal_range": "> 9.5 Hz",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "Peak frequency of Alpha_EC"
+    },
+    {
+      "location": "Cz",
+      "metric": "Peak alpha frequency (EO)",
+      "value": 10.133333333333333,
+      "normal_range": "> 9.5 Hz",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "Peak frequency of Alpha_EO"
+    },
+    {
+      "location": "O1",
+      "metric": "Alpha response %",
+      "value": 78.73928984657394,
+      "normal_range": "> 50%",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "(Alpha_EC - Alpha_EO) / Alpha_EO * 100"
+    },
+    {
+      "location": "O1",
+      "metric": "Alpha recovery %",
+      "value": -0.5542742285350475,
+      "normal_range": "< 25%",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "(Alpha_EO_before - Alpha_EO_after) / Alpha_EO_before * 100"
+    },
+    {
+      "location": "O1",
+      "metric": "Theta/Beta (EO)",
+      "value": 1.466132533082812,
+      "normal_range": "1.8-2.2",
+      "status": "OUT_OF_RANGE",
+      "probe": "Ask about poor stress tolerance, racing thoughts, anxiety, self-quieting difficulty, sleep problems, and depressive symptoms.",
+      "formula": "Theta_EO / Beta_EO"
+    },
+    {
+      "location": "O1",
+      "metric": "Theta/Beta (EC)",
+      "value": 1.4590601044065947,
+      "normal_range": "1.8-2.2",
+      "status": "OUT_OF_RANGE",
+      "probe": "Low EC theta/beta can track sleep disturbance; compare with EO findings.",
+      "formula": "Theta_EC / Beta_EC"
+    },
+    {
+      "location": "O1",
+      "metric": "T/B EO->EC shift %",
+      "value": 0.4823867226618526,
+      "normal_range": "> -25%",
+      "status": "IN_RANGE",
+      "probe": "Positive value indicates theta/beta decreased from EO to EC.",
+      "formula": "(T/B_EO - T/B_EC) / (T/B_EO) * 100"
+    },
+    {
+      "location": "O1",
+      "metric": "Total amplitude (EC)",
+      "value": 21.8378368620341,
+      "normal_range": "< 60 uV",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "Theta_EC + Alpha_EC + Beta_EC"
+    },
+    {
+      "location": "O1",
+      "metric": "Peak alpha frequency (EC)",
+      "value": 10.066666666666666,
+      "normal_range": "> 9.5 Hz",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "Peak frequency of Alpha_EC"
+    },
+    {
+      "location": "O1",
+      "metric": "Peak alpha frequency (EO)",
+      "value": 10.066666666666666,
+      "normal_range": "> 9.5 Hz",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "Peak frequency of Alpha_EO"
+    },
+    {
+      "location": "F3",
+      "metric": "Theta/Beta (EC)",
+      "value": 1.4566164821894803,
+      "normal_range": "< 2.2",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "Theta_EC / Beta_EC"
+    },
+    {
+      "location": "F3",
+      "metric": "Theta/Alpha (EC)",
+      "value": 0.6222381613566638,
+      "normal_range": "1.2-1.6",
+      "status": "OUT_OF_RANGE",
+      "probe": "Ask about frontal Alpha ADD profile: organization, sequencing, sustained focus, planning, completion, and talkativeness. | Markedly low ratio: probe fibromyalgia, chronic fatigue, and sleep disturbance.",
+      "formula": "Theta_EC / Alpha_EC"
+    },
+    {
+      "location": "F3",
+      "metric": "Total amplitude (EC)",
+      "value": 23.233208792698274,
+      "normal_range": "< 60 uV",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "Theta_EC + Alpha_EC + Beta_EC"
+    },
+    {
+      "location": "F4",
+      "metric": "Theta/Beta (EC)",
+      "value": 1.4876398024256272,
+      "normal_range": "< 2.2",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "Theta_EC / Beta_EC"
+    },
+    {
+      "location": "F4",
+      "metric": "Theta/Alpha (EC)",
+      "value": 0.6292436562879886,
+      "normal_range": "1.2-1.6",
+      "status": "OUT_OF_RANGE",
+      "probe": "Ask about frontal Alpha ADD profile: organization, sequencing, sustained focus, planning, completion, and talkativeness. | Markedly low ratio: probe fibromyalgia, chronic fatigue, and sleep disturbance.",
+      "formula": "Theta_EC / Alpha_EC"
+    },
+    {
+      "location": "F4",
+      "metric": "Total amplitude (EC)",
+      "value": 20.1753751620055,
+      "normal_range": "< 60 uV",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "Theta_EC + Alpha_EC + Beta_EC"
+    },
+    {
+      "location": "F3/F4",
+      "metric": "Theta asymmetry %",
+      "value": 13.110426973926936,
+      "normal_range": "<= 15% diff (practical equality check)",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "abs(F4_theta - F3_theta) / mean(F3_theta, F4_theta) * 100"
+    },
+    {
+      "location": "F3/F4",
+      "metric": "Alpha asymmetry %",
+      "value": 14.22475927936642,
+      "normal_range": "<= 15% diff (practical equality check)",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "abs(F4_alpha - F3_alpha) / mean(F3_alpha, F4_alpha) * 100"
+    },
+    {
+      "location": "F3/F4",
+      "metric": "Beta asymmetry %",
+      "value": 15.207302109265783,
+      "normal_range": "<= 15% diff (practical equality check)",
+      "status": "OUT_OF_RANGE",
+      "probe": "Frontal asymmetry exceeds expected parity; correlate with executive/emotional regulation history.",
+      "formula": "abs(F4_beta - F3_beta) / mean(F3_beta, F4_beta) * 100"
+    },
+    {
+      "location": "Fz",
+      "metric": "Delta (EC)",
+      "value": 1.1274725909042118,
+      "normal_range": "< 9.0 uV",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "Delta_EC"
+    },
+    {
+      "location": "Fz",
+      "metric": "HiBeta/Beta (EC)",
+      "value": 0.4208609843495313,
+      "normal_range": "0.45-0.55",
+      "status": "OUT_OF_RANGE",
+      "probe": "Ask about passiveness; if <0.40, ask about anxiety despite low ratio profile.",
+      "formula": "HiBeta_EC / Beta_EC"
+    },
+    {
+      "location": "Fz",
+      "metric": "HiBeta + Beta (EC)",
+      "value": 6.74986392752504,
+      "normal_range": "< 15 uV",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "HiBeta_EC + Beta_EC"
+    },
+    {
+      "location": "Fz",
+      "metric": "LoAlpha/HiAlpha (EC)",
+      "value": 1.3447051287577134,
+      "normal_range": "< 1.5",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "LoAlpha_EC / HiAlpha_EC"
+    },
+    {
+      "location": "Fz",
+      "metric": "Peak alpha frequency (EC)",
+      "value": 10.133333333333333,
+      "normal_range": "> 9.5 Hz",
+      "status": "IN_RANGE",
+      "probe": "",
+      "formula": "Peak frequency of Alpha_EC"
+    }
+  ],
+  "summary": {
+    "in_range": 25,
+    "out_of_range": 9,
+    "missing": 0,
+    "potential_symptom_questions": [
+      "Ask about inability to sit still, sleep onset issues, headaches/chronic pain, tremor, dystonia, and motor-linked seizure features.",
+      "Ask about CADD traits and fatigue under cognitive load. | If EO is normal but task ratio is high, ask about reading comprehension/retention and task fatigue.",
+      "Ask whether reading/problem solving quickly causes fatigue.",
+      "Ask about poor stress tolerance, racing thoughts, anxiety, self-quieting difficulty, sleep problems, and depressive symptoms.",
+      "Low EC theta/beta can track sleep disturbance; compare with EO findings.",
+      "Ask about frontal Alpha ADD profile: organization, sequencing, sustained focus, planning, completion, and talkativeness. | Markedly low ratio: probe fibromyalgia, chronic fatigue, and sleep disturbance.",
+      "Frontal asymmetry exceeds expected parity; correlate with executive/emotional regulation history.",
+      "Ask about passiveness; if <0.40, ask about anxiety despite low ratio profile."
+    ]
+  },
+  "derived": {
+    "conditions": {
+      "Cz": {
+        "EO": {
+          "delta": 1.044718731715101,
+          "theta": 6.335165136552452,
+          "alpha": 5.753476584365776,
+          "lo_alpha": 0.168176878509475,
+          "hi_alpha": 0.1357652924443855,
+          "smr": 0.24382081273191109,
+          "beta": 4.374065244381799,
+          "hibeta": 1.8246497178423922,
+          "total_amp_basic": 16.46270696530003,
+          "hibeta_plus_beta": 6.198714962224191,
+          "peak_alpha": 10.133333333333333
+        },
+        "EO_AFTER": {
+          "delta": 1.055503204057749,
+          "theta": 6.375284105592484,
+          "alpha": 5.72554054877711,
+          "lo_alpha": 0.13240805125075775,
+          "hi_alpha": 0.12117630671958027,
+          "smr": 0.24527791255815626,
+          "beta": 4.362071848240385,
+          "hibeta": 1.809424840928234,
+          "total_amp_basic": 16.46289650260998,
+          "hibeta_plus_beta": 6.1714966891686185,
+          "peak_alpha": 10.066666666666666
+        },
+        "EC": {
+          "delta": 1.0144550497595952,
+          "theta": 6.3894593446559185,
+          "alpha": 10.191705992225003,
+          "lo_alpha": 0.15344481954969147,
+          "hi_alpha": 0.15626939651578522,
+          "smr": 0.2633300274226168,
+          "beta": 4.358127146715196,
+          "hibeta": 1.848261257076226,
+          "total_amp_basic": 20.93929248359612,
+          "hibeta_plus_beta": 6.206388403791422,
+          "peak_alpha": 10.133333333333333
+        },
+        "UT": {
+          "delta": 1.0164815389434425,
+          "theta": 8.038498847728,
+          "alpha": 5.683167920582886,
+          "lo_alpha": 0.16001087530518493,
+          "hi_alpha": 0.13769775372798287,
+          "smr": 0.24920957788253276,
+          "beta": 3.496560533981708,
+          "hibeta": 1.8868280214352922,
+          "total_amp_basic": 17.21822730229259,
+          "hibeta_plus_beta": 5.383388555417,
+          "peak_alpha": 10.1
+        },
+        "OMNI": {
+          "delta": 1.0673269691770133,
+          "theta": 5.325731227768881,
+          "alpha": 5.765844035508735,
+          "lo_alpha": 0.10662626805293308,
+          "hi_alpha": 0.1458648888226004,
+          "smr": 0.25106691249892776,
+          "beta": 4.309608194364311,
+          "hibeta": 1.927436173512517,
+          "total_amp_basic": 15.401183457641928,
+          "hibeta_plus_beta": 6.237044367876829,
+          "peak_alpha": 10.066666666666666
+        }
+      },
+      "O1": {
+        "EO": {
+          "delta": 1.0440714829489788,
+          "theta": 6.614345193606532,
+          "alpha": 5.938906617555462,
+          "lo_alpha": 0.1389150995074349,
+          "hi_alpha": 0.12994211447392262,
+          "smr": 0.274794879806168,
+          "beta": 4.511423793112796,
+          "hibeta": 1.8802030329109107,
+          "total_amp_basic": 17.06467560427479,
+          "hibeta_plus_beta": 6.391626826023707,
+          "peak_alpha": 10.066666666666666
+        },
+        "EO_AFTER": {
+          "delta": 1.1295018712649743,
+          "theta": 6.613254522643212,
+          "alpha": 5.9718244463933345,
+          "lo_alpha": 0.1691421697993673,
+          "hi_alpha": 0.13796177958282735,
+          "smr": 0.22716921544882368,
+          "beta": 4.516252462314125,
+          "hibeta": 1.9252591305960658,
+          "total_amp_basic": 17.101331431350673,
+          "hibeta_plus_beta": 6.441511592910191,
+          "peak_alpha": 10.066666666666666
+        },
+        "EC": {
+          "delta": 1.133837233973145,
+          "theta": 6.65886968579996,
+          "alpha": 10.615159512869818,
+          "lo_alpha": 0.15990228511721905,
+          "hi_alpha": 0.13857426111694585,
+          "smr": 0.2931744909555776,
+          "beta": 4.563807663364319,
+          "hibeta": 1.9430799564333137,
+          "total_amp_basic": 21.8378368620341,
+          "hibeta_plus_beta": 6.506887619797633,
+          "peak_alpha": 10.066666666666666
+        }
+      },
+      "F3": {
+        "EC": {
+          "delta": 1.1051345207826777,
+          "theta": 7.053995054255536,
+          "alpha": 11.336487365023922,
+          "lo_alpha": 0.1552695239961328,
+          "hi_alpha": 0.15883225418018407,
+          "smr": 0.25794554363488365,
+          "beta": 4.842726373418817,
+          "hibeta": 2.110327402415413,
+          "total_amp_basic": 23.233208792698274,
+          "hibeta_plus_beta": 6.9530537758342295,
+          "peak_alpha": 10.066666666666666
+        }
+      },
+      "F4": {
+        "EC": {
+          "delta": 1.0694196407902414,
+          "theta": 6.186079876697625,
+          "alpha": 9.830976943320055,
+          "lo_alpha": 0.12463056772400417,
+          "hi_alpha": 0.17160783346037317,
+          "smr": 0.24743781280419996,
+          "beta": 4.158318341987822,
+          "hibeta": 1.8255563969538717,
+          "total_amp_basic": 20.1753751620055,
+          "hibeta_plus_beta": 5.983874738941694,
+          "peak_alpha": 10.133333333333333
+        }
+      },
+      "Fz": {
+        "EC": {
+          "delta": 1.1274725909042118,
+          "theta": 6.827346342917562,
+          "alpha": 10.967046871174015,
+          "lo_alpha": 0.17192935344879584,
+          "hi_alpha": 0.12785654622112605,
+          "smr": 0.3307850311395834,
+          "beta": 4.750544917393957,
+          "hibeta": 1.9993190101310834,
+          "total_amp_basic": 22.544938131485534,
+          "hibeta_plus_beta": 6.74986392752504,
+          "peak_alpha": 10.133333333333333
+        }
+      }
+    }
+  },
+  "epoch_features": [
+    {
+      "sequence": "O1",
+      "index": 1,
+      "label": "EO",
+      "instruction": "Eyes OPEN. Fixate on a point. Stay still, jaw relaxed, minimize blinking. Next epoch begins automatically.",
+      "seconds": 15,
+      "features": {
+        "O1": {
+          "delta": 1.0113943638084082,
+          "theta": 6.608142023331907,
+          "alpha": 5.9561300458480515,
+          "lo_alpha": 0.14943348229549072,
+          "hi_alpha": 0.13431420461383442,
+          "smr": 0.26423389056272734,
+          "beta": 4.473225094954703,
+          "hibeta": 1.8828432391548628,
+          "total_amp_basic": 17.037497164134663,
+          "hibeta_plus_beta": 6.356068334109565,
+          "peak_alpha": 10.066666666666666
+        }
+      }
+    },
+    {
+      "sequence": "O1",
+      "index": 2,
+      "label": "EO",
+      "instruction": "Eyes OPEN. Fixate on a point. Stay still, jaw relaxed, minimize blinking. Next epoch begins automatically.",
+      "seconds": 15,
+      "features": {
+        "O1": {
+          "delta": 1.0767486020895494,
+          "theta": 6.6205483638811575,
+          "alpha": 5.921683189262874,
+          "lo_alpha": 0.1283967167193791,
+          "hi_alpha": 0.1255700243340108,
+          "smr": 0.28535586904960863,
+          "beta": 4.549622491270888,
+          "hibeta": 1.8775628266669588,
+          "total_amp_basic": 17.09185404441492,
+          "hibeta_plus_beta": 6.427185317937847,
+          "peak_alpha": 10.066666666666666
+        }
+      }
+    },
+    {
+      "sequence": "O1",
+      "index": 3,
+      "label": "EC",
+      "instruction": "Eyes CLOSED. Stay still, jaw relaxed, minimize swallowing/blinking. Next epoch begins automatically.",
+      "seconds": 15,
+      "features": {
+        "O1": {
+          "delta": 1.133837233973145,
+          "theta": 6.65886968579996,
+          "alpha": 10.615159512869818,
+          "lo_alpha": 0.15990228511721905,
+          "hi_alpha": 0.13857426111694585,
+          "smr": 0.2931744909555776,
+          "beta": 4.563807663364319,
+          "hibeta": 1.9430799564333137,
+          "total_amp_basic": 21.8378368620341,
+          "hibeta_plus_beta": 6.506887619797633,
+          "peak_alpha": 10.066666666666666
+        }
+      }
+    },
+    {
+      "sequence": "O1",
+      "index": 4,
+      "label": "EO",
+      "instruction": "Eyes OPEN. Fixate on a point. Stay still, jaw relaxed, minimize blinking. Next epoch begins automatically.",
+      "seconds": 15,
+      "features": {
+        "O1": {
+          "delta": 1.1295018712649743,
+          "theta": 6.613254522643212,
+          "alpha": 5.9718244463933345,
+          "lo_alpha": 0.1691421697993673,
+          "hi_alpha": 0.13796177958282735,
+          "smr": 0.22716921544882368,
+          "beta": 4.516252462314125,
+          "hibeta": 1.9252591305960658,
+          "total_amp_basic": 17.101331431350673,
+          "hibeta_plus_beta": 6.441511592910191,
+          "peak_alpha": 10.066666666666666
+        }
+      }
+    },
+    {
+      "sequence": "Cz",
+      "index": 1,
+      "label": "EO",
+      "instruction": "Eyes OPEN. Fixate on a point. Stay still, jaw relaxed, minimize blinking. Next epoch begins automatically.",
+      "seconds": 15,
+      "features": {
+        "Cz": {
+          "delta": 1.0606879611372733,
+          "theta": 6.2717785562138175,
+          "alpha": 5.7618180555308305,
+          "lo_alpha": 0.1667787246973231,
+          "hi_alpha": 0.11160903332483983,
+          "smr": 0.24530669104491423,
+          "beta": 4.368792577012618,
+          "hibeta": 1.7837521625258832,
+          "total_amp_basic": 16.40238918875727,
+          "hibeta_plus_beta": 6.152544739538501,
+          "peak_alpha": 10.133333333333333
+        }
+      }
+    },
+    {
+      "sequence": "Cz",
+      "index": 2,
+      "label": "EO",
+      "instruction": "Eyes OPEN. Fixate on a point. Stay still, jaw relaxed, minimize blinking. Next epoch begins automatically.",
+      "seconds": 15,
+      "features": {
+        "Cz": {
+          "delta": 1.0287495022929287,
+          "theta": 6.398551716891086,
+          "alpha": 5.745135113200721,
+          "lo_alpha": 0.16957503232162688,
+          "hi_alpha": 0.15992155156393117,
+          "smr": 0.2423349344189079,
+          "beta": 4.37933791175098,
+          "hibeta": 1.8655472731589011,
+          "total_amp_basic": 16.52302474184279,
+          "hibeta_plus_beta": 6.244885184909881,
+          "peak_alpha": 10.133333333333333
+        }
+      }
+    },
+    {
+      "sequence": "Cz",
+      "index": 3,
+      "label": "EC",
+      "instruction": "Eyes CLOSED. Stay still, jaw relaxed, minimize swallowing/blinking. Next epoch begins automatically.",
+      "seconds": 15,
+      "features": {
+        "Cz": {
+          "delta": 1.0144550497595952,
+          "theta": 6.3894593446559185,
+          "alpha": 10.191705992225003,
+          "lo_alpha": 0.15344481954969147,
+          "hi_alpha": 0.15626939651578522,
+          "smr": 0.2633300274226168,
+          "beta": 4.358127146715196,
+          "hibeta": 1.848261257076226,
+          "total_amp_basic": 20.93929248359612,
+          "hibeta_plus_beta": 6.206388403791422,
+          "peak_alpha": 10.133333333333333
+        }
+      }
+    },
+    {
+      "sequence": "Cz",
+      "index": 4,
+      "label": "EO",
+      "instruction": "Eyes OPEN. Fixate on a point. Stay still, jaw relaxed, minimize blinking. Next epoch begins automatically.",
+      "seconds": 15,
+      "features": {
+        "Cz": {
+          "delta": 1.055503204057749,
+          "theta": 6.375284105592484,
+          "alpha": 5.72554054877711,
+          "lo_alpha": 0.13240805125075775,
+          "hi_alpha": 0.12117630671958027,
+          "smr": 0.24527791255815626,
+          "beta": 4.362071848240385,
+          "hibeta": 1.809424840928234,
+          "total_amp_basic": 16.46289650260998,
+          "hibeta_plus_beta": 6.1714966891686185,
+          "peak_alpha": 10.066666666666666
+        }
+      }
+    },
+    {
+      "sequence": "Cz",
+      "index": 5,
+      "label": "READ",
+      "instruction": "READ silently (no lip movement). Stay still. Next epoch begins automatically.",
+      "seconds": 15,
+      "features": {
+        "Cz": {
+          "delta": 1.0213682310267127,
+          "theta": 8.077373174214395,
+          "alpha": 5.6939101301902255,
+          "lo_alpha": 0.1933110696680269,
+          "hi_alpha": 0.16250403255563034,
+          "smr": 0.243550783929378,
+          "beta": 3.501832465079047,
+          "hibeta": 1.9529450523996552,
+          "total_amp_basic": 17.273115769483667,
+          "hibeta_plus_beta": 5.4547775174787025,
+          "peak_alpha": 10.066666666666666
+        }
+      }
+    },
+    {
+      "sequence": "Cz",
+      "index": 6,
+      "label": "OMNI",
+      "instruction": "Apply OR/Omni/UCS sound as configured. Stay still. Next epoch begins automatically.",
+      "seconds": 15,
+      "features": {
+        "Cz": {
+          "delta": 1.0673269691770133,
+          "theta": 5.325731227768881,
+          "alpha": 5.765844035508735,
+          "lo_alpha": 0.10662626805293308,
+          "hi_alpha": 0.1458648888226004,
+          "smr": 0.25106691249892776,
+          "beta": 4.309608194364311,
+          "hibeta": 1.927436173512517,
+          "total_amp_basic": 15.401183457641928,
+          "hibeta_plus_beta": 6.237044367876829,
+          "peak_alpha": 10.066666666666666
+        }
+      }
+    },
+    {
+      "sequence": "Cz",
+      "index": 7,
+      "label": "COUNT",
+      "instruction": "COUNT silently (serial counting). Stay still. Next epoch begins automatically.",
+      "seconds": 15,
+      "features": {
+        "Cz": {
+          "delta": 1.011594846860172,
+          "theta": 7.999624521241604,
+          "alpha": 5.672425710975545,
+          "lo_alpha": 0.12671068094234292,
+          "hi_alpha": 0.11289147490033538,
+          "smr": 0.2548683718356875,
+          "beta": 3.4912886028843686,
+          "hibeta": 1.8207109904709289,
+          "total_amp_basic": 17.163338835101516,
+          "hibeta_plus_beta": 5.3119995933552975,
+          "peak_alpha": 10.133333333333333
+        }
+      }
+    },
+    {
+      "sequence": "Cz",
+      "index": 8,
+      "label": "EO",
+      "instruction": "Eyes OPEN. Fixate on a point. Stay still, jaw relaxed, minimize blinking. Next epoch begins automatically.",
+      "seconds": 15,
+      "features": {
+        "Cz": {
+          "delta": 0.9982949787912435,
+          "theta": 6.426898388235137,
+          "alpha": 5.7641184230992755,
+          "lo_alpha": 0.13552616658523273,
+          "hi_alpha": 0.16252797718840367,
+          "smr": 0.24017482482046704,
+          "beta": 4.348371763231841,
+          "hibeta": 1.9644005024219566,
+          "total_amp_basic": 16.539388574566253,
+          "hibeta_plus_beta": 6.3127722656537975,
+          "peak_alpha": 10.066666666666666
+        }
+      }
+    },
+    {
+      "sequence": "Cz",
+      "index": 9,
+      "label": "TEST",
+      "instruction": "TEST immediate UCS effect. Stay still. Next epoch begins automatically.",
+      "seconds": 15,
+      "features": {
+        "Cz": {
+          "delta": 1.0470668362415945,
+          "theta": 6.358672340255023,
+          "alpha": 6.477814555687871,
+          "lo_alpha": 0.12640470616427962,
+          "hi_alpha": 0.18762776907980241,
+          "smr": 0.3025382242633864,
+          "beta": 4.780790636121926,
+          "hibeta": 1.8399324109182016,
+          "total_amp_basic": 17.61727753206482,
+          "hibeta_plus_beta": 6.620723047040128,
+          "peak_alpha": 10.133333333333333
+        }
+      }
+    },
+    {
+      "sequence": "Cz",
+      "index": 10,
+      "label": "HARMONIC",
+      "instruction": "Harmonic/UCS therapeutic test. Stay still. Next epoch begins automatically.",
+      "seconds": 15,
+      "features": {
+        "Cz": {
+          "delta": 1.047202377178215,
+          "theta": 6.36855860965493,
+          "alpha": 6.527713359221842,
+          "lo_alpha": 0.13584545657424568,
+          "hi_alpha": 0.155170364117284,
+          "smr": 0.2683283062044912,
+          "beta": 4.7553427970412505,
+          "hibeta": 1.9459000475902601,
+          "total_amp_basic": 17.651614765918023,
+          "hibeta_plus_beta": 6.70124284463151,
+          "peak_alpha": 10.066666666666666
+        }
+      }
+    },
+    {
+      "sequence": "Fz",
+      "index": 1,
+      "label": "EC",
+      "instruction": "Eyes CLOSED. Stay still, jaw relaxed, minimize swallowing/blinking. Next epoch begins automatically.",
+      "seconds": 15,
+      "features": {
+        "Fz": {
+          "delta": 1.1274725909042118,
+          "theta": 6.827346342917562,
+          "alpha": 10.967046871174015,
+          "lo_alpha": 0.17192935344879584,
+          "hi_alpha": 0.12785654622112605,
+          "smr": 0.3307850311395834,
+          "beta": 4.750544917393957,
+          "hibeta": 1.9993190101310834,
+          "total_amp_basic": 22.544938131485534,
+          "hibeta_plus_beta": 6.74986392752504,
+          "peak_alpha": 10.133333333333333
+        }
+      }
+    },
+    {
+      "sequence": "F3",
+      "index": 1,
+      "label": "EC",
+      "instruction": "Eyes CLOSED. Stay still, jaw relaxed, minimize swallowing/blinking. Next epoch begins automatically.",
+      "seconds": 15,
+      "features": {
+        "F3": {
+          "delta": 1.1051345207826777,
+          "theta": 7.053995054255536,
+          "alpha": 11.336487365023922,
+          "lo_alpha": 0.1552695239961328,
+          "hi_alpha": 0.15883225418018407,
+          "smr": 0.25794554363488365,
+          "beta": 4.842726373418817,
+          "hibeta": 2.110327402415413,
+          "total_amp_basic": 23.233208792698274,
+          "hibeta_plus_beta": 6.9530537758342295,
+          "peak_alpha": 10.066666666666666
+        }
+      }
+    },
+    {
+      "sequence": "F4",
+      "index": 1,
+      "label": "EC",
+      "instruction": "Eyes CLOSED. Stay still, jaw relaxed, minimize swallowing/blinking. Next epoch begins automatically.",
+      "seconds": 15,
+      "features": {
+        "F4": {
+          "delta": 1.0694196407902414,
+          "theta": 6.186079876697625,
+          "alpha": 9.830976943320055,
+          "lo_alpha": 0.12463056772400417,
+          "hi_alpha": 0.17160783346037317,
+          "smr": 0.24743781280419996,
+          "beta": 4.158318341987822,
+          "hibeta": 1.8255563969538717,
+          "total_amp_basic": 20.1753751620055,
+          "hibeta_plus_beta": 5.983874738941694,
+          "peak_alpha": 10.133333333333333
+        }
+      }
+    }
+  ]
+}

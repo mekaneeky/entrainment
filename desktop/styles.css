@@ -183,6 +183,12 @@ button.danger {
   color: #fff6f5;
 }
 
+button.secondary {
+  background: linear-gradient(180deg, #dce8ec 0%, #c4d7de 100%);
+  color: #163542;
+  border: 1px solid #acc3cb;
+}
+
 .live-event {
   font-size: 1.05rem;
   font-weight: 800;
@@ -369,6 +375,74 @@ tr.in td {
   margin-bottom: 7px;
 }
 
+.results-toolbar {
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.result-source {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.key-metrics {
+  margin-bottom: 10px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.key-card {
+  flex: 1 1 240px;
+  min-width: 220px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fdfefe;
+  padding: 8px 10px;
+}
+
+.key-card.out {
+  background: #fff4f1;
+}
+
+.key-card.in {
+  background: #f5fcf6;
+}
+
+.key-label {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #35505e;
+}
+
+.key-main {
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.key-value {
+  font-weight: 900;
+  font-size: 1.04rem;
+}
+
+.key-norm {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.key-empty {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
 @media (max-width: 1080px) {
   .controls,
   .live,
@@ -383,5 +457,9 @@ tr.in td {
 
   .channels {
     grid-template-columns: repeat(2, minmax(120px, 1fr));
+  }
+
+  .results-toolbar {
+    align-items: stretch;
   }
 }

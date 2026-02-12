@@ -1,0 +1,35 @@
+Location	Metric	Value	F3 (Left)	F4 (Right)	Norm	Status	Potential Symptom Questions
+Cz	Alpha response %	50.916	-	-	> 30%	IN	
+Cz	Alpha recovery %	20.300	-	-	< 25%	IN	
+Cz	Theta/SMR (EC)	1.560	-	-	< 3.0	IN	
+Cz	Theta/Beta (EO)	2.204	-	-	< 2.2	OUT	Ask about focus and attention inefficiency (CADD profile).
+Cz	Theta/Beta (UT)	2.421	-	-	< 2.2	OUT	Ask about CADD traits and fatigue under cognitive load.
+Cz	Beta fatigue %	7.431	-	-	< 15%	IN	
+Cz	Beta activation %	-7.431	-	-	< 20%	IN	
+Cz	T/B challenge shift %	-9.845	-	-	< 15%	IN	
+Cz	Theta Omni % change	-13.194	-	-	< -5%	IN	
+Cz	Total amplitude (EC)	29.046	-	-	< 60 uV	IN	
+Cz	Peak alpha frequency (EC)	10.400	-	-	> 9.5 Hz	IN	
+Cz	Peak alpha frequency (EO)	8.200	-	-	> 9.5 Hz	OUT	Ask about mental sluggishness.
+O1	Alpha response %	120.043	-	-	> 50%	IN	
+O1	Alpha recovery %	4.137	-	-	< 25%	IN	
+O1	Theta/Beta (EO)	1.841	-	-	1.8-2.2	IN	
+O1	Theta/Beta (EC)	1.460	-	-	1.8-2.2	OUT	Low EC theta/beta can track sleep disturbance; compare with EO findings.
+O1	T/B EO->EC shift %	20.686	-	-	> -25%	IN	Positive value indicates theta/beta decreased from EO to EC.
+O1	Total amplitude (EC)	32.185	-	-	< 60 uV	IN	
+O1	Peak alpha frequency (EC)	10.400	-	-	> 9.5 Hz	IN	
+O1	Peak alpha frequency (EO)	8.833	-	-	> 9.5 Hz	OUT	Ask about mental sluggishness.
+F3	Theta/Beta (EC)	1.815	-	-	< 2.2	IN	
+F3	Theta/Alpha (EC)	0.574	-	-	1.2-1.6	OUT	Ask about frontal Alpha ADD profile: organization, sequencing, sustained focus, planning, completion, and talkativeness. | Markedly low ratio: probe fibromyalgia, chronic fatigue, and sleep disturbance.
+F3	Total amplitude (EC)	28.037	-	-	< 60 uV	IN	
+F4	Theta/Beta (EC)	2.042	-	-	< 2.2	IN	
+F4	Theta/Alpha (EC)	0.702	-	-	1.2-1.6	OUT	Ask about frontal Alpha ADD profile: organization, sequencing, sustained focus, planning, completion, and talkativeness. | Markedly low ratio: probe fibromyalgia, chronic fatigue, and sleep disturbance.
+F4	Total amplitude (EC)	24.080	-	-	< 60 uV	IN	
+F3/F4	Theta asymmetry %	-3.032	8.516	8.262	abs(diff) <= 15% (parity check)	IN	
+F3/F4	Alpha asymmetry %	-22.992	14.830	11.772	abs(diff) <= 15% (parity check)	OUT	Frontal asymmetry exceeds expected parity; correlate with executive/emotional regulation history.
+F3/F4	Beta asymmetry %	-14.770	4.691	4.046	abs(diff) <= 15% (parity check)	IN	
+Fz	Delta (EC)	7.575	-	-	< 9.0 uV	IN	
+Fz	HiBeta/Beta (EC)	0.515	-	-	0.45-0.55	IN	
+Fz	HiBeta + Beta (EC)	6.741	-	-	< 15 uV	IN	
+Fz	LoAlpha/HiAlpha (EC)	1.018	-	-	< 1.5	IN	
+Fz	Peak alpha frequency (EC)	10.400	-	-	> 9.5 Hz	IN	

@@ -124,6 +124,20 @@
 
       <section class="panel results">
         <h2>ClinicalQ Ratios and Probe Guidance</h2>
+        <div class="results-toolbar">
+          <button id="openResultBtn" class="secondary" type="button">Open Result JSON</button>
+          <label>
+            Show
+            <select id="resultFilter">
+              <option value="all">All metrics</option>
+              <option value="out">Out of range only</option>
+              <option value="in">In range only</option>
+              <option value="missing">Missing only</option>
+            </select>
+          </label>
+          <div id="resultSource" class="result-source">Source: live session</div>
+        </div>
+        <div id="keyMetrics" class="key-metrics"></div>
         <div id="summary" class="summary">Run a session to generate results.</div>
         <div class="table-wrap">
           <table id="resultsTable">

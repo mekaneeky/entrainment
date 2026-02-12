@@ -1,4 +1,6 @@
-# ClinicalQ Local App (OpenBCI Cyton)
+# clinicalQ openbci (ClinicalQ Not the App)
+
+ClinicalQ is attributed to Dr. Swingle.
 
 Local-first ClinicalQ workflow:
 - Python backend for OpenBCI Cyton acquisition and ClinicalQ analytics

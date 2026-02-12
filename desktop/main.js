@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const { spawn, spawnSync } = require("child_process");
@@ -18,6 +18,19 @@ function pythonBin() {
 function sendEvent(payload) {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send("session-event", payload);
+  }
+}
+
+function parseJsonWithFallback(raw, sourceLabel) {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    const normalized = raw.replace(/\b-?Infinity\b/g, "null").replace(/\bNaN\b/g, "null");
+    try {
+      return JSON.parse(normalized);
+    } catch (err) {
+      throw new Error(`Invalid JSON in ${sourceLabel}: ${err?.message || String(err)}`);
+    }
   }
 }
 
@@ -95,7 +108,7 @@ async function runSession(config) {
       activeRun = null;
       if (code !== 0) return reject(new Error(`Backend process exited with code ${code}`));
       if (!fs.existsSync(outputPath)) return reject(new Error("Session completed but no result file was produced."));
-      const result = JSON.parse(fs.readFileSync(outputPath, "utf8"));
+      const result = parseJsonWithFallback(fs.readFileSync(outputPath, "utf8"), outputPath);
       resolve({ runId, outputPath, result });
     });
   });
@@ -118,6 +131,20 @@ ipcMain.handle("stop-session", () => {
   activeRun.child.kill("SIGTERM");
   sendEvent({ event: "session_stopped" });
   return { stopped: true };
+});
+
+ipcMain.handle("open-result-file", async () => {
+  const picked = await dialog.showOpenDialog(mainWindow, {
+    title: "Open ClinicalQ Session Result",
+    properties: ["openFile"],
+    filters: [{ name: "JSON", extensions: ["json"] }],
+  });
+  if (picked.canceled || !picked.filePaths.length) return { canceled: true };
+
+  const filePath = picked.filePaths[0];
+  const raw = fs.readFileSync(filePath, "utf8");
+  const parsed = parseJsonWithFallback(raw, filePath);
+  return { canceled: false, filePath, result: parsed };
 });
 
 ipcMain.handle("send-command", (_event, command) => {

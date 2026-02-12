@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld("clinicalQ", {
   checkPython: () => ipcRenderer.invoke("check-python"),
   startSession: (config) => ipcRenderer.invoke("start-session", config),
   stopSession: () => ipcRenderer.invoke("stop-session"),
+  openResultFile: () => ipcRenderer.invoke("open-result-file"),
   sendCommand: (command) => ipcRenderer.invoke("send-command", command),
   onSessionEvent: (callback) => {
     const wrapped = (_event, payload) => callback(payload);

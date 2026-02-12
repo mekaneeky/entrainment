@@ -35,6 +35,10 @@ const refs = {
   resultsTableBody: document.querySelector("#resultsTable tbody"),
   summary: document.getElementById("summary"),
   probeList: document.getElementById("probeList"),
+  openResultBtn: document.getElementById("openResultBtn"),
+  resultFilter: document.getElementById("resultFilter"),
+  resultSource: document.getElementById("resultSource"),
+  keyMetrics: document.getElementById("keyMetrics"),
 };
 
 let running = false;
@@ -65,6 +69,12 @@ const bandState = {
     F3: {},
     F4: {},
   },
+};
+
+const resultState = {
+  metrics: [],
+  summary: { in_range: 0, out_of_range: 0, missing: 0, potential_symptom_questions: [] },
+  sourceLabel: "live session",
 };
 
 function shouldLogEvent(name) {
@@ -163,20 +173,37 @@ function appendEventRow(text) {
 }
 
 function formatValue(value) {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
-  return Number(value).toFixed(3);
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return "-";
+  return numeric.toFixed(3);
+}
+
+function normalizeStatus(status) {
+  const normalized = String(status || "")
+    .trim()
+    .replace(/[\s-]+/g, "_")
+    .toUpperCase();
+  if (["IN_RANGE", "IN", "PASS", "OK"].includes(normalized)) return "IN_RANGE";
+  if (["OUT_OF_RANGE", "OUT", "FAIL"].includes(normalized)) return "OUT_OF_RANGE";
+  if (["MISSING", "NA", "N/A", ""].includes(normalized)) return "MISSING";
+  return "MISSING";
 }
 
 function statusBadge(status) {
-  const normalized = String(status || "").toLowerCase();
-  if (normalized === "in_range") return { text: "IN", cls: "in" };
-  if (normalized === "out_of_range") return { text: "OUT", cls: "out" };
+  const normalized = normalizeStatus(status);
+  if (normalized === "IN_RANGE") return { text: "IN", cls: "in" };
+  if (normalized === "OUT_OF_RANGE") return { text: "OUT", cls: "out" };
   return { text: "MISSING", cls: "missing" };
 }
 
 function clearResults() {
+  resultState.metrics = [];
+  resultState.summary = { in_range: 0, out_of_range: 0, missing: 0, potential_symptom_questions: [] };
+  resultState.sourceLabel = "live session";
   refs.resultsTableBody.innerHTML = "";
   refs.probeList.innerHTML = "";
+  if (refs.keyMetrics) refs.keyMetrics.innerHTML = "";
+  if (refs.resultSource) refs.resultSource.textContent = "Source: live session";
   refs.summary.textContent = "Running session...";
 }
 
@@ -198,18 +225,170 @@ function epochKey(event) {
   return `${event.sequence}-${event.index}-${event.label}`;
 }
 
-function renderResults(payload) {
-  const result = payload?.result || payload;
-  const metrics = result?.metrics || [];
-  const summary = result?.summary || {};
+function toFiniteNumber(value) {
+  if (value === null || value === undefined || value === "") return Number.NaN;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : Number.NaN;
+}
 
+function numberList(text) {
+  const matches = String(text || "").match(/-?\d+(?:\.\d+)?/g);
+  if (!matches) return [];
+  return matches.map((item) => Number(item)).filter((item) => Number.isFinite(item));
+}
+
+function inferStatusFromRange(value, normalRange) {
+  if (!Number.isFinite(value)) return "MISSING";
+  const text = String(normalRange || "").trim();
+  if (!text || text === "-") return "MISSING";
+
+  const absMatch = text.match(/abs.*<=\s*(-?\d+(?:\.\d+)?)/i);
+  if (absMatch) {
+    const limit = Number(absMatch[1]);
+    if (Number.isFinite(limit)) return Math.abs(value) <= limit ? "IN_RANGE" : "OUT_OF_RANGE";
+  }
+
+  const lteMatch = text.match(/^\s*<=\s*(-?\d+(?:\.\d+)?)/);
+  if (lteMatch) {
+    const limit = Number(lteMatch[1]);
+    if (Number.isFinite(limit)) return value <= limit ? "IN_RANGE" : "OUT_OF_RANGE";
+  }
+
+  const gteMatch = text.match(/^\s*>=\s*(-?\d+(?:\.\d+)?)/);
+  if (gteMatch) {
+    const limit = Number(gteMatch[1]);
+    if (Number.isFinite(limit)) return value >= limit ? "IN_RANGE" : "OUT_OF_RANGE";
+  }
+
+  const ltMatch = text.match(/^\s*<\s*(-?\d+(?:\.\d+)?)/);
+  if (ltMatch) {
+    const limit = Number(ltMatch[1]);
+    if (Number.isFinite(limit)) return value < limit ? "IN_RANGE" : "OUT_OF_RANGE";
+  }
+
+  const gtMatch = text.match(/^\s*>\s*(-?\d+(?:\.\d+)?)/);
+  if (gtMatch) {
+    const limit = Number(gtMatch[1]);
+    if (Number.isFinite(limit)) return value > limit ? "IN_RANGE" : "OUT_OF_RANGE";
+  }
+
+  const rangeMatch = text.match(/^\s*(-?\d+(?:\.\d+)?)\s*-\s*(-?\d+(?:\.\d+)?)/);
+  if (rangeMatch) {
+    const low = Number(rangeMatch[1]);
+    const high = Number(rangeMatch[2]);
+    if (Number.isFinite(low) && Number.isFinite(high)) {
+      const min = Math.min(low, high);
+      const max = Math.max(low, high);
+      return value >= min && value <= max ? "IN_RANGE" : "OUT_OF_RANGE";
+    }
+  }
+
+  // fallback for unusual norms that still include a single numeric limit
+  const nums = numberList(text);
+  if (nums.length === 1 && /abs/i.test(text)) {
+    return Math.abs(value) <= nums[0] ? "IN_RANGE" : "OUT_OF_RANGE";
+  }
+
+  return "MISSING";
+}
+
+function normalizeMetricRecord(metric) {
+  const location = String(metric?.location ?? metric?.site ?? metric?.channel ?? "-");
+  const name = String(metric?.metric ?? metric?.name ?? metric?.label ?? "-");
+  const normalRange = String(metric?.normal_range ?? metric?.normalRange ?? metric?.norm ?? metric?.range ?? "-");
+  const value = toFiniteNumber(metric?.value);
+  const left = toFiniteNumber(metric?.left_value ?? metric?.leftValue ?? metric?.left ?? metric?.f3);
+  const right = toFiniteNumber(metric?.right_value ?? metric?.rightValue ?? metric?.right ?? metric?.f4);
+  const probe = String(metric?.probe ?? metric?.note ?? metric?.question ?? "");
+  const formula = String(metric?.formula ?? "");
+
+  const explicitStatus = normalizeStatus(metric?.status ?? metric?.result ?? metric?.range_status ?? metric?.rangeStatus);
+  const status = explicitStatus !== "MISSING" ? explicitStatus : inferStatusFromRange(value, normalRange);
+
+  return {
+    location,
+    metric: name,
+    value,
+    left_value: Number.isFinite(left) ? left : Number.NaN,
+    right_value: Number.isFinite(right) ? right : Number.NaN,
+    normal_range: normalRange,
+    status,
+    probe,
+    formula,
+  };
+}
+
+function findMetricsContainer(root) {
+  if (!root || typeof root !== "object") return null;
+  const queue = [root];
+  const seen = new Set();
+
+  while (queue.length) {
+    const node = queue.shift();
+    if (!node || typeof node !== "object") continue;
+    if (seen.has(node)) continue;
+    seen.add(node);
+
+    if (Array.isArray(node.metrics)) return node;
+    for (const value of Object.values(node)) {
+      if (value && typeof value === "object") queue.push(value);
+    }
+  }
+  return null;
+}
+
+function summarizeMetrics(metrics) {
+  const summary = { in_range: 0, out_of_range: 0, missing: 0, potential_symptom_questions: [] };
+  const seenProbes = new Set();
+  for (const metric of metrics) {
+    const status = normalizeStatus(metric.status);
+    if (status === "IN_RANGE") summary.in_range += 1;
+    else if (status === "OUT_OF_RANGE") summary.out_of_range += 1;
+    else summary.missing += 1;
+
+    if (status === "OUT_OF_RANGE" && metric.probe) {
+      const probe = String(metric.probe).trim();
+      if (probe && !seenProbes.has(probe)) {
+        seenProbes.add(probe);
+        summary.potential_symptom_questions.push(probe);
+      }
+    }
+  }
+  return summary;
+}
+
+function selectedResultFilter() {
+  return String(refs.resultFilter?.value || "all").toLowerCase();
+}
+
+function isMetricVisible(metric) {
+  const mode = selectedResultFilter();
+  const status = normalizeStatus(metric.status);
+  if (mode === "out") return status === "OUT_OF_RANGE";
+  if (mode === "in") return status === "IN_RANGE";
+  if (mode === "missing") return status === "MISSING";
+  return true;
+}
+
+
+function renderResultTable(metrics) {
   refs.resultsTableBody.innerHTML = "";
+  if (!metrics.length) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 8;
+    td.textContent = "No metrics match the current filter.";
+    tr.appendChild(td);
+    refs.resultsTableBody.appendChild(tr);
+    return;
+  }
 
   for (const metric of metrics) {
+    const status = normalizeStatus(metric.status);
     const tr = document.createElement("tr");
-    tr.className = metric.status === "OUT_OF_RANGE" ? "out" : metric.status === "IN_RANGE" ? "in" : "";
+    tr.className = status === "OUT_OF_RANGE" ? "out" : status === "IN_RANGE" ? "in" : "";
 
-    const badge = statusBadge(metric.status);
+    const badge = statusBadge(status);
     const cells = [
       metric.location,
       metric.metric,
@@ -236,30 +415,67 @@ function renderResults(payload) {
 
     refs.resultsTableBody.appendChild(tr);
   }
+}
 
-  refs.summary.textContent = `In range: ${summary.in_range ?? 0} | Out of range: ${summary.out_of_range ?? 0} | Missing: ${
-    summary.missing ?? 0
-  }`;
-
+function renderProbeList(summary) {
   refs.probeList.innerHTML = "";
   const probes = summary.potential_symptom_questions || [];
   if (!probes.length) {
     const li = document.createElement("li");
     li.textContent = "No out-of-range symptom probes generated.";
     refs.probeList.appendChild(li);
-  } else {
-    for (const probe of probes) {
-      const li = document.createElement("li");
-      li.textContent = probe;
-      refs.probeList.appendChild(li);
-    }
+    return;
   }
+
+  for (const probe of probes) {
+    const li = document.createElement("li");
+    li.textContent = probe;
+    refs.probeList.appendChild(li);
+  }
+}
+
+function redrawResults() {
+  const visibleMetrics = resultState.metrics.filter((metric) => isMetricVisible(metric));
+  renderResultTable(visibleMetrics);
+  renderProbeList(resultState.summary);
+
+  const total = resultState.metrics.length;
+  const shown = visibleMetrics.length;
+  const filter = selectedResultFilter();
+  const filterNote = filter === "all" ? `Showing ${shown}.` : `Showing ${shown}/${total}.`;
+  refs.summary.textContent = `In range: ${resultState.summary.in_range} | Out of range: ${resultState.summary.out_of_range} | Missing: ${resultState.summary.missing} | ${filterNote}`;
+
+  if (refs.resultSource) refs.resultSource.textContent = `Source: ${resultState.sourceLabel || "live session"}`;
+}
+
+function renderResults(payload, sourceLabel = "live session") {
+  const container = findMetricsContainer(payload?.result || payload);
+  if (!container) {
+    throw new Error("Could not find a metrics[] array in the selected JSON.");
+  }
+
+  const metrics = Array.isArray(container.metrics) ? container.metrics.map(normalizeMetricRecord) : [];
+  const summary = summarizeMetrics(metrics);
+  const summaryProbes = Array.isArray(container?.summary?.potential_symptom_questions)
+    ? container.summary.potential_symptom_questions
+    : [];
+  for (const probe of summaryProbes) {
+    const text = String(probe || "").trim();
+    if (!text) continue;
+    if (!summary.potential_symptom_questions.includes(text)) summary.potential_symptom_questions.push(text);
+  }
+
+  resultState.metrics = metrics;
+  resultState.summary = summary;
+  resultState.sourceLabel = sourceLabel || "live session";
+  redrawResults();
 }
 
 function setRunningState(isRunning) {
   running = isRunning;
   refs.startBtn.disabled = isRunning;
   refs.stopBtn.disabled = !isRunning;
+  if (refs.openResultBtn) refs.openResultBtn.disabled = isRunning;
 }
 
 function buildConfig() {
@@ -572,7 +788,7 @@ refs.startBtn.addEventListener("click", async () => {
     await warmAudio();
     const config = buildConfig();
     const payload = await window.clinicalQ.startSession(config);
-    renderResults(payload.result);
+    renderResults(payload.result, payload.outputPath || payload.output_path || "live session");
     refs.liveEvent.textContent = `Completed. Output: ${payload.outputPath || payload.output_path || "saved"}`;
   } catch (err) {
     refs.liveEvent.textContent = `Failed: ${err.message || err}`;
@@ -602,6 +818,22 @@ refs.readyBtn.addEventListener("click", async () => {
   }
 });
 
+if (refs.openResultBtn) {
+  refs.openResultBtn.addEventListener("click", async () => {
+    if (running) return;
+    try {
+      const picked = await window.clinicalQ.openResultFile();
+      if (!picked || picked.canceled) return;
+      renderResults(picked.result, picked.filePath || "result file");
+      refs.liveEvent.textContent = `Loaded result: ${picked.filePath || "file"}`;
+      appendEventRow(`Loaded result file: ${picked.filePath || "unknown path"}`);
+    } catch (err) {
+      refs.liveEvent.textContent = `Open failed: ${err.message || err}`;
+      appendEventRow(`Open result failed: ${err.message || err}`);
+    }
+  });
+}
+
 function syncRepositionUi() {
   const isSequential = refs.mode.value === "sequential";
   refs.manualReposition.disabled = !isSequential;
@@ -616,6 +848,7 @@ if (refs.bandTheta) refs.bandTheta.addEventListener("change", drawBandpower);
 if (refs.bandAlpha) refs.bandAlpha.addEventListener("change", drawBandpower);
 if (refs.bandBeta) refs.bandBeta.addEventListener("change", drawBandpower);
 if (refs.bandHiBeta) refs.bandHiBeta.addEventListener("change", drawBandpower);
+if (refs.resultFilter) refs.resultFilter.addEventListener("change", redrawResults);
 window.addEventListener("resize", drawBandpower);
 
 refs.mode.addEventListener("change", syncRepositionUi);
