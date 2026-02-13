@@ -1,6 +1,6 @@
-# clinicalQ openbci (ClinicalQ Not the App)
+# clinicalQ opensource Aapp
 
-ClinicalQ is the work of Dr. Paul G. Swingle.
+The ClinicalQ framework is the work of Dr. Paul G. Swingle.
 
 Local-first ClinicalQ workflow:
 - Python backend for OpenBCI Cyton acquisition and ClinicalQ analytics
