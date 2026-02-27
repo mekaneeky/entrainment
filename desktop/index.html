@@ -20,6 +20,33 @@
         <h2>Session Setup</h2>
         <div class="grid two-col">
           <label>
+            Workflow
+            <select id="analysisType">
+              <option value="clinicalq">ClinicalQ Ratios</option>
+              <option value="coherence">Coherence Z-score</option>
+            </select>
+          </label>
+          <label>
+            Coherence Norms
+            <select id="coherenceNorms">
+              <option value="ds003775">OpenNeuro ds003775</option>
+              <option value="dvs_608">Dortmund Vital Study (608)</option>
+              <option value="dvs_608_cleaned">DVS (608) Cleaned Auto</option>
+              <option value="ds003775_cleaned">ds003775 Cleaned Auto</option>
+            </select>
+          </label>
+          <label>
+            Z-score Mode
+            <select id="zscoreMode">
+              <option value="global">Global Norms</option>
+              <option value="age">Age-based Norms</option>
+            </select>
+          </label>
+          <label>
+            Subject Age
+            <input id="subjectAge" type="number" min="1" max="120" value="35" />
+          </label>
+          <label>
             Mode
             <select id="mode">
               <option value="sequential">Sequential (O1 -> Cz -> Fz -> F3 -> F4)</option>
@@ -122,8 +149,131 @@
         <div class="event-scroll" id="eventLog"></div>
       </section>
 
+      <section class="panel spark" id="sparkPanel">
+        <div class="spark-top">
+          <h2>Spark Neurofeedback Lab</h2>
+          <p>Build editable block protocols, run alpha/theta or resilience training, and save/load custom protocol JSON.</p>
+          <div id="sparkStatus" class="status-chip spark-chip">Idle</div>
+        </div>
+
+        <div class="spark-grid">
+          <div class="spark-col builder">
+            <h3>Protocol Builder</h3>
+            <div class="grid three-col spark-form">
+              <label>
+                Variant
+                <select id="sparkVariant">
+                  <option value="alpha_theta">Alpha/Theta</option>
+                  <option value="resilience">Resilience</option>
+                </select>
+              </label>
+              <label>
+                Duration (sec)
+                <input id="sparkDuration" type="number" min="10" max="3600" value="180" />
+              </label>
+              <label>
+                Sampling Rate (Hz)
+                <input id="sparkSamplingRate" type="number" min="50" max="1000" value="250" />
+              </label>
+              <label>
+                UI/Event Rate (Hz)
+                <input id="sparkEventHz" type="number" min="1" max="60" value="20" />
+              </label>
+              <label>
+                Serial Port
+                <input id="sparkSerialPort" value="COM3" />
+              </label>
+              <label>
+                Protocol Name
+                <input id="sparkProtocolName" value="Spark Alpha Theta v1" />
+              </label>
+              <label class="toggle">
+                <input id="sparkUseSynthetic" type="checkbox" checked />
+                <span>Use synthetic board</span>
+              </label>
+              <label class="toggle">
+                <input id="sparkFastMode" type="checkbox" checked />
+                <span>Fast mode</span>
+              </label>
+            </div>
+
+            <div class="spark-block-toolbar">
+              <label>
+                Add block type
+                <select id="sparkNewBlockType"></select>
+              </label>
+              <button id="sparkAddBlockBtn" class="secondary" type="button">Add Block</button>
+              <button id="sparkAlphaPresetBtn" class="secondary" type="button">Alpha/Theta Preset</button>
+              <button id="sparkResPresetBtn" class="secondary" type="button">Resilience Preset</button>
+            </div>
+
+            <div id="sparkBlocks" class="spark-blocks"></div>
+
+            <div class="actions spark-actions">
+              <button id="sparkSaveProtocolBtn" class="secondary" type="button">Save Protocol</button>
+              <button id="sparkLoadProtocolBtn" class="secondary" type="button">Load Protocol</button>
+              <button id="sparkExportConfigBtn" class="secondary" type="button">Copy Runtime Config</button>
+            </div>
+
+            <div class="spark-preview-wrap">
+              <div class="spark-preview-title">Protocol JSON Preview</div>
+              <pre id="sparkProtocolPreview" class="spark-preview"></pre>
+            </div>
+          </div>
+
+          <div class="spark-col runtime">
+            <h3>Run + Live Feedback</h3>
+            <div class="actions">
+              <button id="sparkStartBtn" class="primary" type="button">Start Spark Run</button>
+              <button id="sparkStopBtn" class="danger" type="button" disabled>Stop Spark Run</button>
+            </div>
+
+            <div id="sparkLiveHeadline" class="live-event spark-live-headline">Waiting to start Spark protocol.</div>
+
+            <div class="spark-kpis">
+              <div class="spark-kpi">
+                <div class="spark-kpi-label">Mode</div>
+                <div id="sparkKpiMode" class="spark-kpi-value">-</div>
+              </div>
+              <div class="spark-kpi">
+                <div class="spark-kpi-label">Samples</div>
+                <div id="sparkKpiSamples" class="spark-kpi-value">0 / 0</div>
+              </div>
+              <div class="spark-kpi">
+                <div class="spark-kpi-label">Feedback</div>
+                <div id="sparkKpiFeedback" class="spark-kpi-value">0.000</div>
+              </div>
+              <div class="spark-kpi">
+                <div class="spark-kpi-label">Stickiness / Ratio</div>
+                <div id="sparkKpiPrimary" class="spark-kpi-value">-</div>
+              </div>
+            </div>
+
+            <canvas id="sparkTrendCanvas" class="bandpower-canvas spark-trend"></canvas>
+
+            <div class="table-wrap spark-site-wrap">
+              <table id="sparkSiteTable">
+                <thead>
+                  <tr>
+                    <th>Site</th>
+                    <th>Dominant (Hz)</th>
+                    <th>Target (Hz)</th>
+                    <th>Phase</th>
+                    <th>Met</th>
+                    <th>Stickiness 60s</th>
+                  </tr>
+                </thead>
+                <tbody id="sparkSiteBody"></tbody>
+              </table>
+            </div>
+
+            <div id="sparkEventLog" class="event-scroll spark-log"></div>
+          </div>
+        </div>
+      </section>
+
       <section class="panel results">
-        <h2>ClinicalQ Ratios and Probe Guidance</h2>
+        <h2>Analysis Metrics and Probe Guidance</h2>
         <div class="results-toolbar">
           <button id="openResultBtn" class="secondary" type="button">Open Result JSON</button>
           <label>
@@ -162,5 +312,6 @@
     </main>
 
     <script src="renderer.js"></script>
+    <script src="spark.js"></script>
   </body>
 </html>

@@ -28,6 +28,8 @@ desktop/dist/
 
 # Generated outputs
 output/
+/data/
+/logs/
 
 # OS noise
 Thumbs.db

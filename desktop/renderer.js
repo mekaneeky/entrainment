@@ -1,4 +1,8 @@
 const refs = {
+  analysisType: document.getElementById("analysisType"),
+  coherenceNorms: document.getElementById("coherenceNorms"),
+  zscoreMode: document.getElementById("zscoreMode"),
+  subjectAge: document.getElementById("subjectAge"),
   mode: document.getElementById("mode"),
   serialPort: document.getElementById("serialPort"),
   epochSeconds: document.getElementById("epochSeconds"),
@@ -76,6 +80,14 @@ const resultState = {
   summary: { in_range: 0, out_of_range: 0, missing: 0, potential_symptom_questions: [] },
   sourceLabel: "live session",
 };
+
+function isNFBayEvent(event) {
+  if (!event || typeof event !== "object") return false;
+  if (String(event.runKind || "").toLowerCase() === "nfbay") return true;
+  const name = String(event.event || "");
+  if (name.startsWith("nfbay_")) return true;
+  return name === "runner_spawned" && String(event.runKind || "").toLowerCase() === "nfbay";
+}
 
 function shouldLogEvent(name) {
   return !["epoch_tick", "reposition_tick", "bandpower"].includes(String(name || ""));
@@ -478,9 +490,56 @@ function setRunningState(isRunning) {
   if (refs.openResultBtn) refs.openResultBtn.disabled = isRunning;
 }
 
+function selectedAnalysisType() {
+  return String(refs.analysisType?.value || "clinicalq").toLowerCase();
+}
+
+function selectedZscoreMode() {
+  return String(refs.zscoreMode?.value || "global").toLowerCase();
+}
+
 function buildConfig() {
+  const analysisType = selectedAnalysisType();
   const isSequential = refs.mode.value === "sequential";
   const manualAdvance = isSequential && refs.manualReposition.checked;
+
+  if (analysisType === "coherence") {
+    const zscoreMode = selectedZscoreMode();
+    const ageValue = Number(refs.subjectAge?.value);
+    return {
+      mode: refs.mode.value,
+      epoch_seconds: Number(refs.epochSeconds.value || 30),
+      reposition_seconds: Number(refs.repositionSeconds.value || 20),
+      reposition_mode: manualAdvance ? "manual" : "timer",
+      norms_dataset: String(refs.coherenceNorms?.value || "ds003775"),
+      zscore_mode: zscoreMode,
+      subject_age: zscoreMode === "age" && Number.isFinite(ageValue) ? ageValue : null,
+      sampling_rate: 250,
+      fast_mode: refs.fastMode.checked,
+      board: {
+        board_id: "cyton",
+        serial_port: refs.serialPort.value || "COM3",
+        use_synthetic: refs.useSynthetic.checked,
+        available_channels: [1, 2, 3, 4, 5, 6, 7, 8],
+        seed: 42,
+      },
+      channels: {
+        Cz: Number(refs.chCz.value || 1),
+        O1: Number(refs.chO1.value || 2),
+        Fz: Number(refs.chFz.value || 3),
+        F3: Number(refs.chF3.value || 4),
+        F4: Number(refs.chF4.value || 5),
+      },
+      pairs: [
+        ["F3", "F4"],
+        ["Fz", "Cz"],
+        ["Cz", "O1"],
+        ["F3", "Cz"],
+        ["F4", "Cz"],
+      ],
+    };
+  }
+
   return {
     mode: refs.mode.value,
     epoch_seconds: Number(refs.epochSeconds.value || 15),
@@ -545,8 +604,12 @@ function summarizeEvent(event) {
       return `Analysis ready: ${event.metrics} metrics (${event.out_of_range} out-of-range).`;
     case "session_complete":
       return `Session complete. Result saved: ${event.output_path}`;
+    case "coherence_session_complete":
+      return `Coherence session complete. Result saved: ${event.output_path}`;
     case "session_stopped":
       return "Session stopped.";
+    case "coherence_session_stopped":
+      return "Coherence session stopped.";
     case "error":
       return `Error: ${event.message}`;
     case "log":
@@ -683,6 +746,8 @@ function syncBandpowerUi() {
 }
 
 window.clinicalQ.onSessionEvent((event) => {
+  if (isNFBayEvent(event)) return;
+
   if (event.event === "session_start") {
     setReadyState(null);
     epochContext = null;
@@ -761,7 +826,13 @@ window.clinicalQ.onSessionEvent((event) => {
     setReadyState(null);
     setCountdown("");
   }
-  if (event.event === "session_complete" || event.event === "error" || event.event === "session_stopped") {
+  if (
+    event.event === "session_complete" ||
+    event.event === "coherence_session_complete" ||
+    event.event === "error" ||
+    event.event === "session_stopped" ||
+    event.event === "coherence_session_stopped"
+  ) {
     setReadyState(null);
     setCountdown("");
   }
@@ -787,7 +858,11 @@ refs.startBtn.addEventListener("click", async () => {
   try {
     await warmAudio();
     const config = buildConfig();
-    const payload = await window.clinicalQ.startSession(config);
+    const analysisType = selectedAnalysisType();
+    const payload =
+      analysisType === "coherence"
+        ? await window.clinicalQ.startCoherenceSession(config)
+        : await window.clinicalQ.startSession(config);
     renderResults(payload.result, payload.outputPath || payload.output_path || "live session");
     refs.liveEvent.textContent = `Completed. Output: ${payload.outputPath || payload.output_path || "saved"}`;
   } catch (err) {
@@ -801,7 +876,9 @@ refs.startBtn.addEventListener("click", async () => {
 
 refs.stopBtn.addEventListener("click", async () => {
   if (!running) return;
-  const result = await window.clinicalQ.stopSession();
+  const analysisType = selectedAnalysisType();
+  const result =
+    analysisType === "coherence" ? await window.clinicalQ.stopCoherenceSession() : await window.clinicalQ.stopSession();
   appendEventRow(result.stopped ? "Stop signal sent." : `Stop ignored: ${result.reason}`);
   setReadyState(null);
   setRunningState(false);
@@ -835,10 +912,32 @@ if (refs.openResultBtn) {
 }
 
 function syncRepositionUi() {
+  const analysisType = selectedAnalysisType();
+  const isCoherence = analysisType === "coherence";
+  const zscoreMode = selectedZscoreMode();
   const isSequential = refs.mode.value === "sequential";
+  if (refs.mode) {
+    const sequentialOption = refs.mode.querySelector('option[value="sequential"]');
+    const simultaneousOption = refs.mode.querySelector('option[value="simultaneous"]');
+    if (sequentialOption) {
+      sequentialOption.textContent =
+        analysisType === "coherence"
+          ? "Sequential pairs (move electrodes pair-by-pair)"
+          : "Sequential (O1 -> Cz -> Fz -> F3 -> F4)";
+    }
+    if (simultaneousOption) {
+      simultaneousOption.textContent =
+        analysisType === "coherence" ? "Simultaneous (all coherence sites at once)" : "Simultaneous (all five electrodes)";
+    }
+  }
   refs.manualReposition.disabled = !isSequential;
   const manual = isSequential && refs.manualReposition.checked;
   refs.repositionSeconds.disabled = manual;
+  refs.includeFrontalBaseline.disabled = isCoherence;
+  if (refs.coherenceNorms) refs.coherenceNorms.disabled = !isCoherence;
+  if (refs.zscoreMode) refs.zscoreMode.disabled = !isCoherence;
+  if (refs.subjectAge) refs.subjectAge.disabled = !isCoherence || zscoreMode !== "age";
+  refs.startBtn.textContent = isCoherence ? "Start Coherence Session" : "Start ClinicalQ Session";
 }
 
 if (refs.followActive) refs.followActive.addEventListener("change", syncBandpowerUi);
@@ -853,6 +952,8 @@ window.addEventListener("resize", drawBandpower);
 
 refs.mode.addEventListener("change", syncRepositionUi);
 refs.manualReposition.addEventListener("change", syncRepositionUi);
+if (refs.analysisType) refs.analysisType.addEventListener("change", syncRepositionUi);
+if (refs.zscoreMode) refs.zscoreMode.addEventListener("change", syncRepositionUi);
 syncRepositionUi();
 syncBandpowerUi();
 
