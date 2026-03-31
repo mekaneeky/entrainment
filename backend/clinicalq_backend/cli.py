@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any, Dict
 
 from clinicalq_backend.coherence_runner import DEFAULT_COHERENCE_CONFIG, run_coherence_session
-from clinicalq_backend.nfbay.runtime import DEFAULT_NFBAY_CONFIG, run_nfbay_session
 from clinicalq_backend.runner import run_session
 
 DEFAULT_CONFIG: Dict[str, Any] = {
@@ -76,24 +75,6 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_run_nfbay(args: argparse.Namespace) -> int:
-    config = _load_config(args.config, DEFAULT_NFBAY_CONFIG)
-
-    try:
-        result = run_nfbay_session(config=config, event_cb=_emit)
-    except Exception as exc:
-        _emit({"event": "error", "message": str(exc)})
-        return 1
-
-    output_path = Path(args.output)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with output_path.open("w", encoding="utf-8") as f:
-        json.dump(result, f, indent=2)
-
-    _emit({"event": "nfbay_session_complete", "output_path": str(output_path.resolve())})
-    return 0
-
-
 def cmd_run_coherence(args: argparse.Namespace) -> int:
     config = _load_config(args.config, DEFAULT_COHERENCE_CONFIG)
 
@@ -121,15 +102,6 @@ def cmd_init_config(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_init_nfbay_config(args: argparse.Namespace) -> int:
-    path = Path(args.output)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
-        json.dump(DEFAULT_NFBAY_CONFIG, f, indent=2)
-    print(str(path.resolve()))
-    return 0
-
-
 def cmd_init_coherence_config(args: argparse.Namespace) -> int:
     path = Path(args.output)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -148,11 +120,6 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--output", type=str, required=True, help="Where to write result JSON")
     run_parser.set_defaults(func=cmd_run)
 
-    run_nfbay = sub.add_parser("run-nfbay", help="Run a Neurofeedback Bay block protocol session")
-    run_nfbay.add_argument("--config", type=str, default=None, help="Path to NF-Bay protocol config JSON")
-    run_nfbay.add_argument("--output", type=str, required=True, help="Where to write NF-Bay result JSON")
-    run_nfbay.set_defaults(func=cmd_run_nfbay)
-
     run_coherence = sub.add_parser("run-coherence", help="Run a coherence measurement session")
     run_coherence.add_argument("--config", type=str, default=None, help="Path to coherence config JSON")
     run_coherence.add_argument("--output", type=str, required=True, help="Where to write coherence result JSON")
@@ -161,10 +128,6 @@ def build_parser() -> argparse.ArgumentParser:
     init_parser = sub.add_parser("init-config", help="Write a starter config file")
     init_parser.add_argument("--output", type=str, required=True, help="Path for starter config JSON")
     init_parser.set_defaults(func=cmd_init_config)
-
-    init_nfbay = sub.add_parser("init-nfbay-config", help="Write a starter NF-Bay protocol config")
-    init_nfbay.add_argument("--output", type=str, required=True, help="Path for starter NF-Bay config JSON")
-    init_nfbay.set_defaults(func=cmd_init_nfbay_config)
 
     init_coherence = sub.add_parser("init-coherence-config", help="Write a starter coherence protocol config")
     init_coherence.add_argument("--output", type=str, required=True, help="Path for starter coherence config JSON")

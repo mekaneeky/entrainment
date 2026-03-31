@@ -222,16 +222,6 @@ async function runSession(config) {
   });
 }
 
-async function runNFBaySession(config) {
-  return await runBackendCli({
-    config,
-    subcommand: "run-nfbay",
-    configFileName: "nfbay-config.json",
-    outputFileName: "nfbay-result.json",
-    runKind: "nfbay",
-  });
-}
-
 async function runCoherenceSession(config) {
   return await runBackendCli({
     config,
@@ -255,20 +245,12 @@ ipcMain.handle("start-session", async (_event, config) => {
   return await runSession(config);
 });
 
-ipcMain.handle("start-nfbay-session", async (_event, config) => {
-  return await runNFBaySession(config);
-});
-
 ipcMain.handle("start-coherence-session", async (_event, config) => {
   return await runCoherenceSession(config);
 });
 
 ipcMain.handle("stop-session", () => {
   return stopActiveRun("session_stopped");
-});
-
-ipcMain.handle("stop-nfbay-session", () => {
-  return stopActiveRun("nfbay_session_stopped");
 });
 
 ipcMain.handle("stop-coherence-session", () => {
@@ -287,35 +269,6 @@ ipcMain.handle("open-result-file", async () => {
   const raw = fs.readFileSync(filePath, "utf8");
   const parsed = parseJsonWithFallback(raw, filePath);
   return { canceled: false, filePath, result: parsed };
-});
-
-ipcMain.handle("open-protocol-file", async () => {
-  const picked = await dialog.showOpenDialog(mainWindow, {
-    title: "Open NF-Bay Protocol",
-    properties: ["openFile"],
-    filters: [{ name: "JSON", extensions: ["json"] }],
-  });
-  if (picked.canceled || !picked.filePaths.length) return { canceled: true };
-
-  const filePath = picked.filePaths[0];
-  const raw = fs.readFileSync(filePath, "utf8");
-  const parsed = parseJsonWithFallback(raw, filePath);
-  return { canceled: false, filePath, protocol: parsed };
-});
-
-ipcMain.handle("save-protocol-file", async (_event, payload = {}) => {
-  const protocol = payload?.protocol ?? {};
-  const suggestedName = String(payload?.suggestedName || "nfbay-protocol.json");
-
-  const picked = await dialog.showSaveDialog(mainWindow, {
-    title: "Save NF-Bay Protocol",
-    defaultPath: suggestedName,
-    filters: [{ name: "JSON", extensions: ["json"] }],
-  });
-  if (picked.canceled || !picked.filePath) return { canceled: true };
-
-  fs.writeFileSync(picked.filePath, JSON.stringify(protocol, null, 2), "utf8");
-  return { canceled: false, filePath: picked.filePath };
 });
 
 ipcMain.handle("send-command", (_event, command) => {

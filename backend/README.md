@@ -2,56 +2,6 @@
 
 Python engine for guided ClinicalQ acquisition and analysis.
 
-## NF-Bay blocks
-
-`clinicalq_backend.nfbay` contains BrainBay-style block primitives and an alpha/theta neurofeedback pipeline:
-
-- `FilterBlock`
-- `MagnitudeBlock`
-- `AverageBlock`
-- `ThresholdBlock`
-- `AndBlock`, `OrBlock`, `NotBlock`
-- `TranslateBlock`
-- `SignalBlock`
-- `SessionTimeBlock`
-- `AlphaThetaNeurofeedbackPipeline`
-- `ResilienceTrainingVariant` (dominant +/- offset cycle + 60s stickiness)
-
-Minimal example:
-
-```python
-from clinicalq_backend.nfbay import AlphaThetaConfig, AlphaThetaNeurofeedbackPipeline
-
-cfg = AlphaThetaConfig(sampling_rate=250)
-pipeline = AlphaThetaNeurofeedbackPipeline(cfg)
-
-sample_value = 12.3
-step = pipeline.process_sample(sample_value)
-print(step.feedback_enabled, step.feedback_signal, step.ratio)
-```
-
-Resilience variant example:
-
-```python
-from clinicalq_backend.nfbay import ResilienceSiteConfig, ResilienceTrainingVariant
-
-variant = ResilienceTrainingVariant(
-    {
-        "Fz": ResilienceSiteConfig(offset_hz=2.0, target_mode="dominant_plus_return"),
-        "Pz": ResilienceSiteConfig(offset_hz=1.5, target_mode="dominant_plus_minus"),
-    }
-)
-
-step = variant.process_site_samples({"Fz": 12.3, "Pz": 9.8})
-print(step.combined_feedback_signal, step.by_site["Fz"].stickiness_ratio_60s)
-```
-
-CLI run (for desktop Spark UI and standalone runs):
-
-```bash
-python -m clinicalq_backend.cli run-nfbay --config ./nfbay-config.json --output ./nfbay-result.json
-```
-
 Coherence run (Z-scores and cutoffs referenced to `ds003775` norms):
 
 ```bash
@@ -89,13 +39,79 @@ python3 backend/scripts/preprocess_rest_eeg_cleaned.py \
 
 # DVS cleaned norms from cleaned FIF files
 python3 backend/scripts/build_coherence_norms_dvs.py \
-  --dataset data/ds005385/derivatives/cleaned_auto \
-  --glob 'sub-*/ses-1/eeg/*_task-EyesClosed_acq-pre_eeg_desc-cleanedauto_eeg.fif' \
+  --dataset data/ds005385 \
+  --glob 'derivatives/cleaned_auto/sub-*/ses-1/eeg/*_task-EyesClosed_acq-pre_eeg_desc-cleanedauto_eeg.fif' \
+  --pairs all \
   --output backend/clinicalq_backend/data/coherence_norms_dvs_608_cleanedauto.json
 ```
+
+This emits expanded metrics including:
+- pair metrics: coherence, phase, asymmetry
+- site metrics: total coherence (`TOTCOH`), band amplitude, absolute power, relative power, theta/beta ratio, peak alpha frequency, total amplitude
+- global metric: total coherence (`TOTCOH_GLOBAL`) per band
+
+Legacy 10-20 aliases are normalized automatically:
+- `T3 -> T7`
+- `T4 -> T8`
+- `T5 -> P7`
+- `T6 -> P8`
 
 Download DVS resting files (optional helper):
 
 ```bash
 python3 backend/scripts/download_ds005385_dvs.py --output data/ds005385 --task EyesClosed --acquisition pre --session ses-1
+```
+
+Manual metric value scoring + 10-20 z-score topomap:
+
+```bash
+# input JSON format: {"metrics": {"AP:F3:alpha": 1.23, "AP:F4:alpha": 1.11, ...}}
+python3 backend/scripts/score_and_plot_zmetrics.py \
+  --norms-dataset dvs_608_cleaned \
+  --zscore-mode age \
+  --subject-age 35 \
+  --input-json ./metric_values.json \
+  --output-json ./scored_metrics.json \
+  --plot-output ./topomap_ap_alpha.png \
+  --plot-metric-type absolute_power \
+  --plot-band alpha
+```
+
+You can also score directly from a prior coherence result JSON:
+
+```bash
+python3 backend/scripts/score_and_plot_zmetrics.py \
+  --norms-dataset dvs_608_cleaned \
+  --result-json ./coherence-result.json \
+  --output-json ./scored_metrics.json \
+  --plot-output ./topomap_ap_alpha.png \
+  --plot-metric-type absolute_power \
+  --plot-band alpha
+```
+
+Pair-line connectivity map (example: coherence alpha, show all pairs):
+
+```bash
+python3 backend/scripts/score_and_plot_zmetrics.py \
+  --norms-dataset dvs_608_cleaned \
+  --result-json ./coherence-result.json \
+  --output-json ./scored_metrics.json \
+  --plot-output ./coherence_alpha_lines.png \
+  --plot-metric-type coherence \
+  --plot-band alpha \
+  --pair-line-show-all
+```
+
+Hyper-coherent only lines (`z >= 2`):
+
+```bash
+python3 backend/scripts/score_and_plot_zmetrics.py \
+  --norms-dataset dvs_608_cleaned \
+  --result-json ./coherence-result.json \
+  --output-json ./scored_metrics.json \
+  --plot-output ./coherence_alpha_hyper_lines.png \
+  --plot-metric-type coherence \
+  --plot-band alpha \
+  --pair-line-z-threshold 2.0 \
+  --pair-positive-only
 ```

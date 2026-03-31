@@ -97,21 +97,6 @@ body {
   grid-column: span 12;
 }
 
-.spark {
-  grid-column: span 12;
-  background: linear-gradient(145deg, #f9f6ee 0%, #f6fbfd 52%, #f1f6ec 100%);
-}
-
-.spark-top p {
-  margin: 6px 0 8px;
-  color: #35505e;
-  max-width: 90ch;
-}
-
-.spark-chip {
-  background: #ddeef0;
-}
-
 h2,
 h3 {
   margin: 0 0 10px;
@@ -165,11 +150,17 @@ button {
 }
 
 input,
-select {
+select,
+textarea {
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 8px 9px;
   background: #ffffff;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 56px;
 }
 
 .actions {
@@ -462,153 +453,92 @@ tr.in td {
   font-size: 0.86rem;
 }
 
-.spark-grid {
-  margin-top: 8px;
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 14px;
-}
-
-.spark-col {
-  border: 1px solid rgba(0, 0, 0, 0.1);
+.qeeg-settings {
+  margin-top: 14px;
+  border: 1px solid var(--line);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.72);
-  padding: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 10px 12px;
 }
 
-.spark-form {
+.qeeg-settings > summary {
+  cursor: pointer;
+  font-weight: 900;
+  letter-spacing: 0.02em;
   margin-bottom: 10px;
 }
 
-.spark-block-toolbar {
-  display: flex;
-  align-items: end;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
+.qeeg-readings {
+  margin-top: 10px;
+  display: grid;
+  gap: 10px;
 }
 
-.spark-blocks {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 380px;
-  overflow: auto;
-  padding-right: 4px;
-}
-
-.spark-block {
-  border: 1px solid #d2dde2;
+.qeeg-reading-card {
+  border: 1px solid #ced8dd;
   border-radius: 10px;
   background: #fbfdff;
-  padding: 9px;
+  padding: 10px;
 }
 
-.spark-block-head {
+.qeeg-reading-head {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 7px;
+  align-items: center;
+  gap: 10px;
 }
 
-.spark-block-title {
+.qeeg-reading-title {
   font-weight: 900;
-  color: #224252;
+  color: #1a3340;
 }
 
-.spark-block-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(130px, 1fr));
-  gap: 8px;
-}
-
-.spark-actions {
-  margin-top: 10px;
-}
-
-.spark-preview-wrap {
-  margin-top: 10px;
-}
-
-.spark-preview-title {
+.qeeg-reading-stats {
   font-size: 0.82rem;
-  color: #405a66;
-  font-weight: 800;
-  margin-bottom: 4px;
+  color: var(--muted);
+  font-weight: 700;
 }
 
-.spark-preview {
-  margin: 0;
-  max-height: 220px;
-  overflow: auto;
-  border: 1px solid #d2dde2;
-  border-radius: 10px;
-  background: #f9fcff;
-  padding: 8px 10px;
-  font-family: "Consolas", "Courier New", monospace;
-  font-size: 0.78rem;
+.qeeg-map-wrap table {
+  min-width: 320px;
 }
 
-.spark-live-headline {
-  margin-top: 10px;
+.viz-toolbar {
+  margin: 12px 0 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
 }
 
-.spark-kpis {
-  margin-top: 10px;
+.viz-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(120px, 1fr));
-  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 
-.spark-kpi {
-  border: 1px solid #d2dde2;
+.viz-card {
+  border: 1px solid var(--line);
   border-radius: 10px;
-  background: #fcffff;
-  padding: 7px 8px;
+  background: #fdfefe;
+  padding: 10px;
 }
 
-.spark-kpi-label {
-  font-size: 0.73rem;
-  letter-spacing: 0.03em;
-  color: #49606a;
-  font-weight: 800;
-  text-transform: uppercase;
+.viz-card h3 {
+  margin-bottom: 8px;
+  font-size: 0.98rem;
 }
 
-.spark-kpi-value {
-  margin-top: 3px;
-  font-weight: 900;
-  font-size: 1rem;
-  color: #14212a;
-}
-
-.spark-trend {
-  margin-top: 12px;
-  height: 160px;
-}
-
-.spark-site-wrap {
-  margin-top: 10px;
-}
-
-#sparkSiteTable {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 620px;
-}
-
-.spark-log {
-  margin-top: 10px;
-  max-height: 190px;
+.viz-canvas {
+  height: 280px;
 }
 
 @media (max-width: 1080px) {
   .controls,
   .live,
   .results,
-  .hero,
-  .spark {
+  .hero {
     grid-column: span 12;
   }
 
@@ -624,15 +554,7 @@ tr.in td {
     grid-template-columns: repeat(2, minmax(120px, 1fr));
   }
 
-  .spark-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .spark-kpis {
-    grid-template-columns: repeat(2, minmax(120px, 1fr));
-  }
-
-  .spark-block-grid {
+  .viz-grid {
     grid-template-columns: 1fr;
   }
 

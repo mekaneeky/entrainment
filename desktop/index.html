@@ -32,6 +32,8 @@
               <option value="ds003775">OpenNeuro ds003775</option>
               <option value="dvs_608">Dortmund Vital Study (608)</option>
               <option value="dvs_608_cleaned">DVS (608) Cleaned Auto</option>
+              <option value="dvs_608_eo_cleaned">DVS EO (608) Cleaned Auto</option>
+              <option value="dvs_608_eo_cleaned_allpairs">DVS EO (608) Cleaned Auto All-Pairs</option>
               <option value="ds003775_cleaned">ds003775 Cleaned Auto</option>
             </select>
           </label>
@@ -45,6 +47,32 @@
           <label>
             Subject Age
             <input id="subjectAge" type="number" min="1" max="120" value="35" />
+          </label>
+          <label>
+            QEEG Hardware
+            <select id="qeegHardware">
+              <option value="cyton">Cyton (8 EEG)</option>
+              <option value="cyton_daisy" selected>Cyton + Daisy (16 EEG)</option>
+            </select>
+          </label>
+          <label>
+            Electrodes / Reading
+            <input id="qeegElectrodesPerReading" type="number" min="2" max="16" value="16" />
+          </label>
+          <label>
+            Reading Slots
+            <input id="qeegReadingCount" type="number" min="1" max="6" value="2" />
+          </label>
+          <label>
+            Active Reading
+            <select id="qeegActiveReading"></select>
+          </label>
+          <label>
+            Pair Coverage
+            <select id="qeegPairCoverage">
+              <option value="all_within_reading">All pairs in active reading</option>
+              <option value="target_pairs_only">Target-list pairs in active reading</option>
+            </select>
           </label>
           <label>
             Mode
@@ -94,14 +122,54 @@
           </label>
         </div>
 
-        <h3>Channel Map (BrainFlow EEG index)</h3>
-        <div class="grid channels">
-          <label>Cz <input id="chCz" type="number" value="1" min="1" max="16" /></label>
-          <label>O1 <input id="chO1" type="number" value="2" min="1" max="16" /></label>
-          <label>Fz <input id="chFz" type="number" value="3" min="1" max="16" /></label>
-          <label>F3 <input id="chF3" type="number" value="4" min="1" max="16" /></label>
-          <label>F4 <input id="chF4" type="number" value="5" min="1" max="16" /></label>
+        <div id="clinicalqChannelMapSection">
+          <h3>Channel Map (BrainFlow EEG index)</h3>
+          <div class="grid channels">
+            <label>Cz <input id="chCz" type="number" value="1" min="1" max="16" /></label>
+            <label>O1 <input id="chO1" type="number" value="2" min="1" max="16" /></label>
+            <label>Fz <input id="chFz" type="number" value="3" min="1" max="16" /></label>
+            <label>F3 <input id="chF3" type="number" value="4" min="1" max="16" /></label>
+            <label>F4 <input id="chF4" type="number" value="5" min="1" max="16" /></label>
+          </div>
         </div>
+
+        <details id="qeegSettings" class="qeeg-settings">
+          <summary>QEEG Planning + Placement</summary>
+          <div class="grid two-col">
+            <label>
+              Target Locations (comma-separated 10-20 labels)
+              <textarea id="qeegTargetLocations" rows="3">Fp1,Fp2,F7,F3,Fz,F4,F8,T3,C3,Cz,C4,T4,T5,P3,Pz,P4,T6,O1,O2</textarea>
+            </label>
+            <div class="help">
+              For each reading, list the mounted electrodes. The planner computes covered/missing coherence pairs and suggests an additional placement set for missing pairs.
+            </div>
+          </div>
+          <div class="actions">
+            <button id="qeegAutoPlanBtn" class="secondary" type="button">Auto-Plan Readings</button>
+            <button id="qeegAnalyzePlanBtn" class="secondary" type="button">Analyze Coverage</button>
+          </div>
+          <label class="toggle">
+            <input id="qeegCombineRuns" type="checkbox" checked />
+            <span>Combine consecutive coherence runs in one map/table</span>
+          </label>
+          <div id="qeegPlanSummary" class="summary">Configure target locations and readings.</div>
+          <div id="qeegReadings" class="qeeg-readings"></div>
+          <h3>Active Reading Channel Map</h3>
+          <div class="table-wrap qeeg-map-wrap">
+            <table id="qeegChannelTable">
+              <thead>
+                <tr>
+                  <th>Location</th>
+                  <th>Board Channel</th>
+                </tr>
+              </thead>
+              <tbody id="qeegChannelTableBody"></tbody>
+            </table>
+          </div>
+          <div class="help">
+            Default channel assignments follow a reference map for the selected hardware profile. You can edit any channel value.
+          </div>
+        </details>
 
         <div class="actions">
           <button id="startBtn" class="primary">Start ClinicalQ Session</button>
@@ -149,129 +217,6 @@
         <div class="event-scroll" id="eventLog"></div>
       </section>
 
-      <section class="panel spark" id="sparkPanel">
-        <div class="spark-top">
-          <h2>Spark Neurofeedback Lab</h2>
-          <p>Build editable block protocols, run alpha/theta or resilience training, and save/load custom protocol JSON.</p>
-          <div id="sparkStatus" class="status-chip spark-chip">Idle</div>
-        </div>
-
-        <div class="spark-grid">
-          <div class="spark-col builder">
-            <h3>Protocol Builder</h3>
-            <div class="grid three-col spark-form">
-              <label>
-                Variant
-                <select id="sparkVariant">
-                  <option value="alpha_theta">Alpha/Theta</option>
-                  <option value="resilience">Resilience</option>
-                </select>
-              </label>
-              <label>
-                Duration (sec)
-                <input id="sparkDuration" type="number" min="10" max="3600" value="180" />
-              </label>
-              <label>
-                Sampling Rate (Hz)
-                <input id="sparkSamplingRate" type="number" min="50" max="1000" value="250" />
-              </label>
-              <label>
-                UI/Event Rate (Hz)
-                <input id="sparkEventHz" type="number" min="1" max="60" value="20" />
-              </label>
-              <label>
-                Serial Port
-                <input id="sparkSerialPort" value="COM3" />
-              </label>
-              <label>
-                Protocol Name
-                <input id="sparkProtocolName" value="Spark Alpha Theta v1" />
-              </label>
-              <label class="toggle">
-                <input id="sparkUseSynthetic" type="checkbox" checked />
-                <span>Use synthetic board</span>
-              </label>
-              <label class="toggle">
-                <input id="sparkFastMode" type="checkbox" checked />
-                <span>Fast mode</span>
-              </label>
-            </div>
-
-            <div class="spark-block-toolbar">
-              <label>
-                Add block type
-                <select id="sparkNewBlockType"></select>
-              </label>
-              <button id="sparkAddBlockBtn" class="secondary" type="button">Add Block</button>
-              <button id="sparkAlphaPresetBtn" class="secondary" type="button">Alpha/Theta Preset</button>
-              <button id="sparkResPresetBtn" class="secondary" type="button">Resilience Preset</button>
-            </div>
-
-            <div id="sparkBlocks" class="spark-blocks"></div>
-
-            <div class="actions spark-actions">
-              <button id="sparkSaveProtocolBtn" class="secondary" type="button">Save Protocol</button>
-              <button id="sparkLoadProtocolBtn" class="secondary" type="button">Load Protocol</button>
-              <button id="sparkExportConfigBtn" class="secondary" type="button">Copy Runtime Config</button>
-            </div>
-
-            <div class="spark-preview-wrap">
-              <div class="spark-preview-title">Protocol JSON Preview</div>
-              <pre id="sparkProtocolPreview" class="spark-preview"></pre>
-            </div>
-          </div>
-
-          <div class="spark-col runtime">
-            <h3>Run + Live Feedback</h3>
-            <div class="actions">
-              <button id="sparkStartBtn" class="primary" type="button">Start Spark Run</button>
-              <button id="sparkStopBtn" class="danger" type="button" disabled>Stop Spark Run</button>
-            </div>
-
-            <div id="sparkLiveHeadline" class="live-event spark-live-headline">Waiting to start Spark protocol.</div>
-
-            <div class="spark-kpis">
-              <div class="spark-kpi">
-                <div class="spark-kpi-label">Mode</div>
-                <div id="sparkKpiMode" class="spark-kpi-value">-</div>
-              </div>
-              <div class="spark-kpi">
-                <div class="spark-kpi-label">Samples</div>
-                <div id="sparkKpiSamples" class="spark-kpi-value">0 / 0</div>
-              </div>
-              <div class="spark-kpi">
-                <div class="spark-kpi-label">Feedback</div>
-                <div id="sparkKpiFeedback" class="spark-kpi-value">0.000</div>
-              </div>
-              <div class="spark-kpi">
-                <div class="spark-kpi-label">Stickiness / Ratio</div>
-                <div id="sparkKpiPrimary" class="spark-kpi-value">-</div>
-              </div>
-            </div>
-
-            <canvas id="sparkTrendCanvas" class="bandpower-canvas spark-trend"></canvas>
-
-            <div class="table-wrap spark-site-wrap">
-              <table id="sparkSiteTable">
-                <thead>
-                  <tr>
-                    <th>Site</th>
-                    <th>Dominant (Hz)</th>
-                    <th>Target (Hz)</th>
-                    <th>Phase</th>
-                    <th>Met</th>
-                    <th>Stickiness 60s</th>
-                  </tr>
-                </thead>
-                <tbody id="sparkSiteBody"></tbody>
-              </table>
-            </div>
-
-            <div id="sparkEventLog" class="event-scroll spark-log"></div>
-          </div>
-        </div>
-      </section>
-
       <section class="panel results">
         <h2>Analysis Metrics and Probe Guidance</h2>
         <div class="results-toolbar">
@@ -289,6 +234,65 @@
         </div>
         <div id="keyMetrics" class="key-metrics"></div>
         <div id="summary" class="summary">Run a session to generate results.</div>
+        <div class="viz-toolbar">
+          <label>
+            Z-Map Metric
+            <select id="vizMetricType">
+              <option value="absolute_power">Absolute Power (AP)</option>
+              <option value="relative_power">Relative Power (RP)</option>
+              <option value="band_amplitude">Band Amplitude (BP)</option>
+              <option value="total_coherence">Total Coherence</option>
+              <option value="theta_beta_ratio">Theta/Beta Ratio</option>
+              <option value="peak_alpha_frequency">Peak Alpha Frequency</option>
+              <option value="total_amplitude">Total Amplitude</option>
+            </select>
+          </label>
+          <label>
+            Z-Map Band
+            <select id="vizSiteBand">
+              <option value="delta">Delta</option>
+              <option value="theta">Theta</option>
+              <option value="alpha" selected>Alpha</option>
+              <option value="beta">Beta</option>
+            </select>
+          </label>
+          <label>
+            Pair Band
+            <select id="vizPairBand">
+              <option value="delta">Delta</option>
+              <option value="theta">Theta</option>
+              <option value="alpha" selected>Alpha</option>
+              <option value="beta">Beta</option>
+            </select>
+          </label>
+          <label>
+            Line Metric
+            <select id="vizPairMetric">
+              <option value="coherence">Coherence</option>
+              <option value="phase">Phase</option>
+              <option value="asymmetry">Asymmetry</option>
+            </select>
+          </label>
+          <label>
+            |z| threshold
+            <input id="vizPairThreshold" type="number" min="0" max="6" step="0.1" value="2.0" />
+          </label>
+          <label class="toggle">
+            <input id="vizPairShowAll" type="checkbox" />
+            <span>Show all lines</span>
+          </label>
+        </div>
+        <div class="viz-grid">
+          <div class="viz-card">
+            <h3>Head Z-Score Map</h3>
+            <canvas id="vizHeadCanvas" class="bandpower-canvas viz-canvas"></canvas>
+          </div>
+          <div class="viz-card">
+            <h3>Pair Connectivity</h3>
+            <canvas id="vizPairCanvas" class="bandpower-canvas viz-canvas"></canvas>
+          </div>
+        </div>
+        <div id="vizSummary" class="help">Run or open a coherence result to render head maps.</div>
         <div class="table-wrap">
           <table id="resultsTable">
               <thead>
@@ -312,6 +316,5 @@
     </main>
 
     <script src="renderer.js"></script>
-    <script src="spark.js"></script>
   </body>
 </html>

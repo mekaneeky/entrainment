@@ -54,7 +54,7 @@ def test_coherence_analysis_scores_against_norms(tmp_path):
         norms_path=str(norms_path),
     )
 
-    assert len(result.metrics) == 9
+    assert len(result.metrics) == 54
     assert result.summary["out_of_range"] >= 1
     zscores = [row["zscore"] for row in result.derived["coherence"]["rows"]]
     assert any((not math.isnan(z)) and z > 2.0 for z in zscores)
