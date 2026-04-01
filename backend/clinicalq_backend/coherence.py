@@ -473,7 +473,8 @@ def analyze_coherence_session(
     subject_age = _to_age(session_data.get("subject_age"))
     age_bin_label = _resolve_age_bin_label(norms.get("age_bins"), subject_age) if zscore_mode == "age" else None
 
-    locations = sorted({loc for pair in pairs for loc in pair})
+    explicit_locations = [str(loc).strip() for loc in session_data.get("locations", []) if str(loc).strip()]
+    locations = sorted(set(explicit_locations) | {loc for pair in pairs for loc in pair})
     if len(locations) > MAX_LOCATIONS:
         raise RuntimeError(f"Too many coherence locations ({len(locations)}). Max supported is {MAX_LOCATIONS}.")
 
@@ -770,6 +771,8 @@ def analyze_coherence_session(
         "zscore_mode": zscore_mode,
         "subject_age": subject_age,
         "age_bin": age_bin_label,
+        "recording_source": session_data.get("recording_source"),
+        "warnings": list(session_data.get("warnings", [])),
     }
 
     derived = {

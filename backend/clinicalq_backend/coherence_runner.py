@@ -9,6 +9,7 @@ import numpy as np
 
 from clinicalq_backend.coherence import DEFAULT_PAIRS, analyze_coherence_session, session_result_to_dict
 from clinicalq_backend.openbci import create_board
+from clinicalq_backend.recordings import build_offline_coherence_session, normalize_channel_map
 from clinicalq_backend.types import EpochSpec, EventCallback
 
 DEFAULT_CHANNELS = {"Cz": 1, "O1": 2, "Fz": 3, "F3": 4, "F4": 5}
@@ -27,6 +28,12 @@ DEFAULT_COHERENCE_CONFIG: Dict[str, Any] = {
     "subject_age": None,
     "sampling_rate": 250,
     "fast_mode": False,
+    "source": {
+        "kind": "live",
+        "sync_mode": "independent",
+        "recordings": [],
+        "exclude_ranges": [],
+    },
     "board": {
         "board_id": "cyton",
         "serial_port": "COM3",
@@ -45,10 +52,27 @@ def _emit(event_cb: EventCallback | None, event: str, **payload: Any) -> None:
     event_cb({"event": event, **payload})
 
 
-def _resolve_channels(config: Dict[str, Any]) -> Dict[str, int]:
-    merged = dict(DEFAULT_CHANNELS)
-    merged.update({k: int(v) for k, v in config.get("channels", {}).items()})
+def _resolve_live_channels(config: Dict[str, Any]) -> Dict[str, int]:
+    merged: Dict[str, int] = dict(DEFAULT_CHANNELS)
+    normalized = normalize_channel_map(config.get("channels"))
+    for location, ref in normalized.items():
+        if not isinstance(ref, int):
+            raise RuntimeError(
+                f"Live coherence capture requires numeric BrainFlow channel indices. Invalid mapping for {location}: {ref}"
+            )
+        merged[location] = int(ref)
     return merged
+
+
+def _source_kind(config: Dict[str, Any]) -> str:
+    source_cfg = config.get("source")
+    if isinstance(source_cfg, dict):
+        kind = str(source_cfg.get("kind", "")).strip().lower()
+        if kind in {"existing_recordings", "recordings", "offline", "file", "files"}:
+            return "existing_recordings"
+    if config.get("recordings"):
+        return "existing_recordings"
+    return "live"
 
 
 def _validate_channels_for_pairs(channels: Dict[str, int], pairs: List[Tuple[str, str]]) -> None:
@@ -178,13 +202,34 @@ def _wait_for_ready(event_cb: EventCallback | None, next_pair: str) -> None:
 
 
 def run_coherence_session(config: Dict[str, Any], event_cb: EventCallback | None = None) -> Dict[str, Any]:
+    source_kind = _source_kind(config)
+    pairs = _resolve_pairs(config)
+
+    if source_kind == "existing_recordings":
+        _emit(event_cb, "session_start", mode="offline", analysis="coherence", source_kind=source_kind)
+        session_data = build_offline_coherence_session(config, pairs=pairs, event_cb=event_cb)
+        session = analyze_coherence_session(
+            session_data,
+            norms_path=config.get("norms_path"),
+            norms_dataset=config.get("norms_dataset"),
+        )
+        result = session_result_to_dict(session)
+        result["epoch_features"] = session_data["epochs"]
+
+        _emit(
+            event_cb,
+            "analysis_complete",
+            metrics=len(result.get("metrics", [])),
+            out_of_range=result.get("summary", {}).get("out_of_range", 0),
+        )
+        return result
+
     mode = str(config.get("mode", "simultaneous")).lower()
     epoch_seconds = int(config.get("epoch_seconds", 30))
     reposition_seconds = int(config.get("reposition_seconds", 20))
     reposition_mode = str(config.get("reposition_mode", "manual")).lower()
 
-    pairs = _resolve_pairs(config)
-    channels = _resolve_channels(config)
+    channels = _resolve_live_channels(config)
     _validate_channels_for_pairs(channels, pairs)
 
     if reposition_mode not in {"timer", "manual"}:

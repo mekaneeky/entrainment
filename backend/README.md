@@ -17,6 +17,41 @@ It supports:
 - `zscore_mode`: `global` or `age`
 - `subject_age`: numeric age (used when `zscore_mode=age`)
 - up to 20 configured coherence locations (via `pairs` + `channels`)
+- live board capture or offline `source.kind=existing_recordings`
+- multiple EEG files, with `source.sync_mode=parallel` for synchronized multi-recorder sessions
+- shared artifact cut windows via `source.exclude_ranges`
+
+Offline recording import notes:
+- `channels` may use BrainFlow-style numeric indices for live capture, or file channel labels / 1-based column positions for imported recordings.
+- imported `.edf` / `.fif` files require `pip install 'clinicalq-backend[offline]'`
+- parallel multi-file import only makes cross-file coherence sense when those recordings were truly time-aligned
+
+Minimal offline example:
+
+```json
+{
+  "epoch_seconds": 30,
+  "sampling_rate": 250,
+  "norms_dataset": "dvs_608",
+  "channels": {
+    "F3": "F3",
+    "F4": "F4",
+    "Cz": "Cz",
+    "O1": "O1",
+    "Fz": "Fz"
+  },
+  "pairs": [["F3", "F4"], ["F3", "Cz"], ["F4", "Cz"], ["Fz", "Cz"], ["Cz", "O1"]],
+  "source": {
+    "kind": "existing_recordings",
+    "sync_mode": "parallel",
+    "recordings": [
+      {"path": "C:/data/session_a.edf"},
+      {"path": "C:/data/session_b.edf"}
+    ],
+    "exclude_ranges": [[10, 14.5], [52, 57]]
+  }
+}
+```
 
 Build norms datasets:
 
