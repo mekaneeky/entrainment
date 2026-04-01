@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QEEG Coverage Planner</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="backdrop"></div>
+    <main class="layout">
+      <section class="panel hero">
+        <h1>QEEG Coverage Planner</h1>
+        <p>
+          Plan a legacy 19-channel 10-20 style qEEG from smaller OpenBCI recordings. Enter how many channels you can record
+          at once, add any positions you already covered, and the planner generates full reading groups until every
+          coherence pair has been co-recorded at least once.
+        </p>
+        <div class="status-chip planner-chip generated">Standalone Planner Window</div>
+      </section>
+
+      <section class="panel planner">
+        <h2>19-Channel Coverage Planner</h2>
+        <p class="planner-intro">
+          One line equals one recording group. The planner fills spare slots in groups you already entered, then creates new
+          readings only if needed. It now optimizes for pair coverage, not just touching each scalp site once.
+        </p>
+        <div class="grid planner-grid">
+          <label>
+            Channels Per Recording
+            <input id="plannerChannelCount" type="number" min="1" max="32" value="8" />
+          </label>
+          <div class="planner-actions">
+            <button id="plannerClearBtn" class="secondary" type="button">Clear Planner</button>
+          </div>
+          <label class="planner-span-two">
+            Existing Readings / Covered Positions
+            <textarea
+              id="plannerReadings"
+              rows="7"
+              placeholder="One reading per line. Example:&#10;Fp1,Fp2,F7,F3,Fz,F4,F8,T7&#10;C3,Cz,C4,T8&#10;&#10;Aliases T3/T4/T5/T6 are accepted."
+            ></textarea>
+          </label>
+        </div>
+        <div class="help">
+          Pair coverage across multiple runs is a combinatorial planning problem: every electrode pair must appear together
+          in at least one full reading. That still is not identical to one simultaneous 19-channel recording unless the
+          groups were captured in parallel and time-aligned.
+        </div>
+        <div id="plannerStats" class="planner-stats"></div>
+        <h3>Target Montage</h3>
+        <div id="plannerTargets" class="planner-targets"></div>
+        <div class="planner-columns">
+          <div class="planner-card">
+            <h3>Suggested Readings</h3>
+            <div id="plannerGroups" class="planner-groups"></div>
+          </div>
+          <div class="planner-card">
+            <h3>Coverage Notes</h3>
+            <ul id="plannerNotes" class="planner-notes"></ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="planner.js"></script>
+  </body>
+</html>

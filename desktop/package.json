@@ -5,10 +5,10 @@
   "description": "Offline ClinicalQ desktop app (Electron + Python backend)",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "set ELECTRON_RUN_AS_NODE=&& electron . --no-sandbox",
+    "planner": "set ELECTRON_RUN_AS_NODE=&& electron . --planner --no-sandbox"
   },
   "devDependencies": {
     "electron": "^33.0.0"
   }
 }
-
