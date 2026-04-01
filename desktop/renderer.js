@@ -3,8 +3,11 @@ const refs = {
   coherenceNorms: document.getElementById("coherenceNorms"),
   zscoreMode: document.getElementById("zscoreMode"),
   subjectAge: document.getElementById("subjectAge"),
+  recordingSource: document.getElementById("recordingSource"),
   mode: document.getElementById("mode"),
   serialPort: document.getElementById("serialPort"),
+  pickRecordingsBtn: document.getElementById("pickRecordingsBtn"),
+  recordingSyncMode: document.getElementById("recordingSyncMode"),
   epochSeconds: document.getElementById("epochSeconds"),
   repositionSeconds: document.getElementById("repositionSeconds"),
   useSynthetic: document.getElementById("useSynthetic"),
@@ -32,6 +35,7 @@ const refs = {
   qeegPlanSummary: document.getElementById("qeegPlanSummary"),
   qeegReadings: document.getElementById("qeegReadings"),
   qeegChannelTableBody: document.getElementById("qeegChannelTableBody"),
+  openPlannerBtn: document.getElementById("openPlannerBtn"),
   startBtn: document.getElementById("startBtn"),
   stopBtn: document.getElementById("stopBtn"),
   readyBtn: document.getElementById("readyBtn"),
@@ -57,6 +61,8 @@ const refs = {
   resultFilter: document.getElementById("resultFilter"),
   resultSource: document.getElementById("resultSource"),
   keyMetrics: document.getElementById("keyMetrics"),
+  artifactRanges: document.getElementById("artifactRanges"),
+  recordingFiles: document.getElementById("recordingFiles"),
   vizMetricType: document.getElementById("vizMetricType"),
   vizSiteBand: document.getElementById("vizSiteBand"),
   vizPairBand: document.getElementById("vizPairBand"),
@@ -197,6 +203,10 @@ const qeegState = {
   activeReading: 0,
 };
 
+const offlineRecordingState = {
+  filePaths: [],
+};
+
 const resultState = {
   metrics: [],
   summary: { in_range: 0, out_of_range: 0, missing: 0, potential_symptom_questions: [] },
@@ -303,6 +313,18 @@ function selectedZscoreMode() {
   return String(refs.zscoreMode?.value || "global").toLowerCase();
 }
 
+function selectedRecordingSource() {
+  return String(refs.recordingSource?.value || "live").toLowerCase();
+}
+
+function selectedRecordingSyncMode() {
+  return String(refs.recordingSyncMode?.value || "parallel").toLowerCase();
+}
+
+function offlineCoherenceModeEnabled() {
+  return selectedAnalysisType() === "coherence" && selectedRecordingSource() === "existing_recordings";
+}
+
 function selectedHardwareProfile() {
   const key = String(refs.qeegHardware?.value || "cyton").toLowerCase();
   return HARDWARE_PROFILES[key] || HARDWARE_PROFILES.cyton;
@@ -370,6 +392,17 @@ function seedBandLocations(locations) {
 function fillMissingChannelAssignments(readingIndex) {
   const reading = qeegState.readings[readingIndex];
   if (!reading) return;
+  if (selectedRecordingSource() === "existing_recordings") {
+    const normalized = {};
+    for (const loc of reading.locations) {
+      const current = reading.channelMap?.[loc];
+      const text = String(current ?? "").trim();
+      normalized[loc] = text || loc;
+    }
+    reading.channelMap = normalized;
+    return;
+  }
+
   const profile = selectedHardwareProfile();
   const maxCh = profile.maxChannels;
   const refMap = profile.referenceMap;
@@ -413,6 +446,52 @@ function duplicateChannels(channelMap) {
     seen.add(ch);
   }
   return [...dupes].sort((a, b) => a - b);
+}
+
+function normalizeChannelInput(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  if (/^\d+$/.test(text)) return Number(text);
+  return text;
+}
+
+function parseTimeRanges(text) {
+  const lines = String(text || "")
+    .split(/\r?\n|;/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const out = [];
+  for (const line of lines) {
+    const match = line.match(/^\s*(-?\d+(?:\.\d+)?)\s*[-,]\s*(-?\d+(?:\.\d+)?)\s*$/);
+    if (!match) {
+      throw new Error(`Invalid artifact range "${line}". Use start-end in seconds.`);
+    }
+    const a = Number(match[1]);
+    const b = Number(match[2]);
+    if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) {
+      throw new Error(`Invalid artifact range "${line}".`);
+    }
+    out.push([Math.min(a, b), Math.max(a, b)]);
+  }
+  return out;
+}
+
+function shortFileName(filePath) {
+  return String(filePath || "").replace(/^.*[\\/]/, "");
+}
+
+function renderRecordingFiles() {
+  if (!refs.recordingFiles) return;
+  if (!offlineRecordingState.filePaths.length) {
+    refs.recordingFiles.textContent = "No imported EEG files selected.";
+    return;
+  }
+  const mode = selectedRecordingSyncMode() === "parallel" ? "parallel synced files" : "independent files";
+  const lines = [`${offlineRecordingState.filePaths.length} EEG file(s) selected as ${mode}:`];
+  for (const filePath of offlineRecordingState.filePaths) {
+    lines.push(`- ${shortFileName(filePath)}`);
+  }
+  refs.recordingFiles.textContent = lines.join("\n");
 }
 
 function targetLocations() {
@@ -608,6 +687,7 @@ function renderQeegChannelMap() {
 
   fillMissingChannelAssignments(qeegState.activeReading);
   const maxCh = hardwareMaxChannels();
+  const offlineMode = selectedRecordingSource() === "existing_recordings";
 
   for (const loc of reading.locations) {
     const tr = document.createElement("tr");
@@ -618,14 +698,22 @@ function renderQeegChannelMap() {
 
     const chTd = document.createElement("td");
     const input = document.createElement("input");
-    input.type = "number";
-    input.min = "1";
-    input.max = String(maxCh);
+    input.type = offlineMode ? "text" : "number";
+    if (!offlineMode) {
+      input.min = "1";
+      input.max = String(maxCh);
+    }
     input.value = String(reading.channelMap?.[loc] || "");
+    input.placeholder = offlineMode ? `e.g. ${loc}` : "1";
     input.addEventListener("change", () => {
-      const numeric = Number(input.value);
-      if (Number.isInteger(numeric) && numeric >= 1 && numeric <= maxCh) {
-        reading.channelMap[loc] = numeric;
+      if (offlineMode) {
+        const normalized = normalizeChannelInput(input.value);
+        reading.channelMap[loc] = normalized === null ? loc : normalized;
+      } else {
+        const numeric = Number(input.value);
+        if (Number.isInteger(numeric) && numeric >= 1 && numeric <= maxCh) {
+          reading.channelMap[loc] = numeric;
+        }
       }
       updateQeegPlanSummary();
     });
@@ -1583,6 +1671,7 @@ function setRunningState(isRunning) {
   if (refs.startBtn) refs.startBtn.disabled = isRunning;
   if (refs.stopBtn) refs.stopBtn.disabled = !isRunning;
   if (refs.openResultBtn) refs.openResultBtn.disabled = isRunning;
+  syncSessionUi();
 }
 
 function selectedBands() {
@@ -1788,6 +1877,7 @@ function coherencePairsForReading(locations) {
 function buildCoherenceConfig() {
   const profile = selectedHardwareProfile();
   const maxCh = profile.maxChannels;
+  const recordingSource = selectedRecordingSource();
 
   const active = qeegState.readings[qeegState.activeReading];
   if (!active || !active.locations.length) {
@@ -1803,11 +1893,20 @@ function buildCoherenceConfig() {
 
   const channels = {};
   for (const loc of locations) {
-    const ch = Number(active.channelMap?.[loc]);
-    if (!Number.isInteger(ch) || ch < 1 || ch > maxCh) {
-      throw new Error(`Invalid channel mapping for ${loc}. Use 1-${maxCh}.`);
+    const raw = active.channelMap?.[loc];
+    const normalized = normalizeChannelInput(raw);
+    if (recordingSource === "existing_recordings") {
+      if (normalized === null || (typeof normalized === "number" && normalized <= 0)) {
+        throw new Error(`Invalid recording channel mapping for ${loc}. Use a label or positive column number.`);
+      }
+      channels[loc] = normalized;
+    } else {
+      const ch = Number(normalized);
+      if (!Number.isInteger(ch) || ch < 1 || ch > maxCh) {
+        throw new Error(`Invalid channel mapping for ${loc}. Use 1-${maxCh}.`);
+      }
+      channels[loc] = ch;
     }
-    channels[loc] = ch;
   }
 
   const pairs = coherencePairsForReading(locations);
@@ -1817,6 +1916,31 @@ function buildCoherenceConfig() {
 
   const zscoreMode = selectedZscoreMode();
   const ageValue = Number(refs.subjectAge?.value);
+
+  if (recordingSource === "existing_recordings") {
+    if (!offlineRecordingState.filePaths.length) {
+      throw new Error("Choose one or more EEG recording files before starting offline coherence analysis.");
+    }
+    return {
+      mode: "simultaneous",
+      epoch_seconds: Number(refs.epochSeconds?.value || 30),
+      reposition_seconds: 0,
+      reposition_mode: "timer",
+      norms_dataset: String(refs.coherenceNorms?.value || "ds003775"),
+      zscore_mode: zscoreMode,
+      subject_age: zscoreMode === "age" && Number.isFinite(ageValue) ? ageValue : null,
+      sampling_rate: 250,
+      channels,
+      locations,
+      pairs,
+      source: {
+        kind: "existing_recordings",
+        sync_mode: selectedRecordingSyncMode(),
+        recordings: offlineRecordingState.filePaths.map((filePath) => ({ path: filePath })),
+        exclude_ranges: parseTimeRanges(refs.artifactRanges?.value || ""),
+      },
+    };
+  }
 
   return {
     mode: "simultaneous",
@@ -1848,6 +1972,7 @@ function buildConfig() {
 function syncSessionUi() {
   const analysisType = selectedAnalysisType();
   const isCoherence = analysisType === "coherence";
+  const isOfflineCoherence = offlineCoherenceModeEnabled();
   const zscoreMode = selectedZscoreMode();
 
   if (isCoherence && refs.mode) refs.mode.value = "simultaneous";
@@ -1859,10 +1984,18 @@ function syncSessionUi() {
   const manual = isSequential && refs.manualReposition?.checked;
   if (refs.repositionSeconds) refs.repositionSeconds.disabled = isCoherence || manual;
   if (refs.includeFrontalBaseline) refs.includeFrontalBaseline.disabled = isCoherence;
+  if (refs.serialPort) refs.serialPort.disabled = isOfflineCoherence;
+  if (refs.useSynthetic) refs.useSynthetic.disabled = isOfflineCoherence;
+  if (refs.fastMode) refs.fastMode.disabled = isOfflineCoherence;
+  if (refs.soundCues) refs.soundCues.disabled = isOfflineCoherence;
+  if (refs.cueLead) refs.cueLead.disabled = isOfflineCoherence;
 
   if (refs.coherenceNorms) refs.coherenceNorms.disabled = !isCoherence;
   if (refs.zscoreMode) refs.zscoreMode.disabled = !isCoherence;
   if (refs.subjectAge) refs.subjectAge.disabled = !isCoherence || zscoreMode !== "age";
+  if (refs.pickRecordingsBtn) refs.pickRecordingsBtn.disabled = !isOfflineCoherence || running;
+  if (refs.recordingSyncMode) refs.recordingSyncMode.disabled = !isOfflineCoherence || running;
+  if (refs.artifactRanges) refs.artifactRanges.disabled = !isOfflineCoherence || running;
 
   if (refs.clinicalqChannelMapSection) {
     refs.clinicalqChannelMapSection.style.display = isCoherence ? "none" : "block";
@@ -1872,9 +2005,13 @@ function syncSessionUi() {
   }
 
   if (refs.startBtn) {
-    refs.startBtn.textContent = isCoherence
-      ? `Start Coherence Reading ${qeegState.activeReading + 1}`
-      : "Start ClinicalQ Session";
+    if (isOfflineCoherence) {
+      refs.startBtn.textContent = `Analyze Imported Reading ${qeegState.activeReading + 1}`;
+    } else if (isCoherence) {
+      refs.startBtn.textContent = `Start Coherence Reading ${qeegState.activeReading + 1}`;
+    } else {
+      refs.startBtn.textContent = "Start ClinicalQ Session";
+    }
   }
 
   if (isCoherence) {
@@ -1883,6 +2020,12 @@ function syncSessionUi() {
   } else {
     seedBandLocations(["CZ", "O1", "FZ", "F3", "F4"]);
   }
+
+  if (refs.recordingFiles) {
+    refs.recordingFiles.style.display = isOfflineCoherence ? "block" : "none";
+  }
+
+  renderRecordingFiles();
 }
 
 window.clinicalQ.onSessionEvent((event) => {
@@ -2079,6 +2222,34 @@ if (refs.openResultBtn) {
   });
 }
 
+if (refs.pickRecordingsBtn) {
+  refs.pickRecordingsBtn.addEventListener("click", async () => {
+    if (!offlineCoherenceModeEnabled() || running) return;
+    try {
+      const picked = await window.clinicalQ.openEegRecordingFiles();
+      if (!picked || picked.canceled) return;
+      offlineRecordingState.filePaths = Array.isArray(picked.filePaths) ? picked.filePaths : [];
+      renderRecordingFiles();
+      appendEventRow(`Selected ${offlineRecordingState.filePaths.length} EEG recording file(s).`);
+      if (refs.liveEvent) refs.liveEvent.textContent = `Imported ${offlineRecordingState.filePaths.length} EEG recording file(s).`;
+    } catch (err) {
+      appendEventRow(`Recording import failed: ${err.message || err}`);
+      if (refs.liveEvent) refs.liveEvent.textContent = `Recording import failed: ${err.message || err}`;
+    }
+  });
+}
+
+if (refs.openPlannerBtn) {
+  refs.openPlannerBtn.addEventListener("click", async () => {
+    try {
+      await window.clinicalQ.openPlannerWindow();
+    } catch (err) {
+      appendEventRow(`Planner launch failed: ${err.message || err}`);
+      if (refs.liveEvent) refs.liveEvent.textContent = `Planner launch failed: ${err.message || err}`;
+    }
+  });
+}
+
 if (refs.followActive) refs.followActive.addEventListener("change", syncBandpowerUi);
 if (refs.bandLoc) refs.bandLoc.addEventListener("change", syncBandpowerUi);
 if (refs.bandDelta) refs.bandDelta.addEventListener("change", drawBandpower);
@@ -2109,9 +2280,20 @@ if (refs.mode) refs.mode.addEventListener("change", syncSessionUi);
 if (refs.manualReposition) refs.manualReposition.addEventListener("change", syncSessionUi);
 if (refs.analysisType) refs.analysisType.addEventListener("change", syncSessionUi);
 if (refs.zscoreMode) refs.zscoreMode.addEventListener("change", syncSessionUi);
+if (refs.recordingSource) {
+  refs.recordingSource.addEventListener("change", () => {
+    for (let i = 0; i < qeegState.readings.length; i += 1) fillMissingChannelAssignments(i);
+    renderQeegReadings();
+    renderQeegChannelMap();
+    updateQeegPlanSummary();
+    syncSessionUi();
+  });
+}
+if (refs.recordingSyncMode) refs.recordingSyncMode.addEventListener("change", renderRecordingFiles);
 
 initializeQeegPlanner();
 seedBandLocations(["CZ", "O1", "FZ", "F3", "F4"]);
+renderRecordingFiles();
 syncSessionUi();
 syncBandpowerUi();
 updateQeegPlanSummary();

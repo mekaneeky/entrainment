@@ -49,6 +49,13 @@
             <input id="subjectAge" type="number" min="1" max="120" value="35" />
           </label>
           <label>
+            Recording Source
+            <select id="recordingSource">
+              <option value="live">Live board</option>
+              <option value="existing_recordings">Existing EEG recordings</option>
+            </select>
+          </label>
+          <label>
             QEEG Hardware
             <select id="qeegHardware">
               <option value="cyton">Cyton (8 EEG)</option>
@@ -86,8 +93,23 @@
             <input id="serialPort" value="COM3" />
           </label>
           <label>
+            Standalone Planner
+            <button id="openPlannerBtn" class="secondary" type="button">Open QEEG Planner</button>
+          </label>
+          <label>
+            Imported EEG Files
+            <button id="pickRecordingsBtn" class="secondary" type="button">Choose EEG Files</button>
+          </label>
+          <label>
             Epoch Seconds
             <input id="epochSeconds" type="number" min="5" max="60" value="15" />
+          </label>
+          <label>
+            Recording Merge
+            <select id="recordingSyncMode">
+              <option value="parallel">Parallel synced files</option>
+              <option value="independent">Independent files</option>
+            </select>
           </label>
           <label>
             Reposition Seconds
@@ -120,6 +142,19 @@
             Cue lead (sec)
             <input id="cueLead" type="number" min="0" max="10" value="3" />
           </label>
+          <label class="span-two">
+            Artifact Cut Ranges (sec)
+            <textarea
+              id="artifactRanges"
+              rows="4"
+              placeholder="10-14&#10;45.5-52&#10;&#10;Applied to every selected recording."
+            ></textarea>
+          </label>
+        </div>
+        <div id="recordingFiles" class="recording-files">No imported EEG files selected.</div>
+        <div class="help">
+          Existing-recording mode is for qEEG/coherence from saved EEG files. One set of cut ranges is applied across every
+          selected file, which is what you want when multiple recordings came from the same synchronized session.
         </div>
 
         <div id="clinicalqChannelMapSection">
@@ -134,8 +169,11 @@
         </div>
 
         <details id="qeegSettings" class="qeeg-settings">
-          <summary>QEEG Planning + Placement</summary>
-          <div class="grid two-col">
+          <summary>Coherence Reading Setup</summary>
+          <div class="help">
+            Use the standalone QEEG Planner to work out full 19-site pair coverage. Enter the actual mounted sites for each reading here.
+          </div>
+          <div class="grid two-col" hidden>
             <label>
               Target Locations (comma-separated 10-20 labels)
               <textarea id="qeegTargetLocations" rows="3">Fp1,Fp2,F7,F3,Fz,F4,F8,T3,C3,Cz,C4,T4,T5,P3,Pz,P4,T6,O1,O2</textarea>
@@ -144,7 +182,7 @@
               For each reading, list the mounted electrodes. The planner computes covered/missing coherence pairs and suggests an additional placement set for missing pairs.
             </div>
           </div>
-          <div class="actions">
+          <div class="actions" hidden>
             <button id="qeegAutoPlanBtn" class="secondary" type="button">Auto-Plan Readings</button>
             <button id="qeegAnalyzePlanBtn" class="secondary" type="button">Analyze Coverage</button>
           </div>
@@ -152,7 +190,7 @@
             <input id="qeegCombineRuns" type="checkbox" checked />
             <span>Combine consecutive coherence runs in one map/table</span>
           </label>
-          <div id="qeegPlanSummary" class="summary">Configure target locations and readings.</div>
+          <div id="qeegPlanSummary" class="summary" hidden>Configure target locations and readings.</div>
           <div id="qeegReadings" class="qeeg-readings"></div>
           <h3>Active Reading Channel Map</h3>
           <div class="table-wrap qeeg-map-wrap">
@@ -160,7 +198,7 @@
               <thead>
                 <tr>
                   <th>Location</th>
-                  <th>Board Channel</th>
+                  <th>Channel / Label</th>
                 </tr>
               </thead>
               <tbody id="qeegChannelTableBody"></tbody>

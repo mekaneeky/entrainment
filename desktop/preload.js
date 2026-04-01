@@ -7,6 +7,8 @@ contextBridge.exposeInMainWorld("clinicalQ", {
   stopSession: () => ipcRenderer.invoke("stop-session"),
   stopCoherenceSession: () => ipcRenderer.invoke("stop-coherence-session"),
   openResultFile: () => ipcRenderer.invoke("open-result-file"),
+  openEegRecordingFiles: () => ipcRenderer.invoke("open-eeg-recording-files"),
+  openPlannerWindow: () => ipcRenderer.invoke("open-planner-window"),
   sendCommand: (command) => ipcRenderer.invoke("send-command", command),
   onSessionEvent: (callback) => {
     const wrapped = (_event, payload) => callback(payload);

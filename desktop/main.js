@@ -6,6 +6,11 @@ const readline = require("readline");
 
 let mainWindow = null;
 let activeRun = null;
+let plannerWindow = null;
+
+function plannerModeEnabled() {
+  return process.argv.includes("--planner");
+}
 
 function backendDir() {
   return path.resolve(__dirname, "..", "backend");
@@ -101,7 +106,37 @@ function parseJsonWithFallback(raw, sourceLabel) {
   }
 }
 
+function createPlannerWindow() {
+  if (plannerWindow && !plannerWindow.isDestroyed()) {
+    plannerWindow.focus();
+    return plannerWindow;
+  }
+
+  plannerWindow = new BrowserWindow({
+    width: 1220,
+    height: 880,
+    minWidth: 980,
+    minHeight: 720,
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  plannerWindow.loadFile(path.join(__dirname, "planner.html"));
+  plannerWindow.on("closed", () => {
+    plannerWindow = null;
+  });
+  return plannerWindow;
+}
+
 function createWindow() {
+  if (plannerModeEnabled()) {
+    mainWindow = createPlannerWindow();
+    return;
+  }
+
   mainWindow = new BrowserWindow({
     width: 1360,
     height: 900,
@@ -269,6 +304,25 @@ ipcMain.handle("open-result-file", async () => {
   const raw = fs.readFileSync(filePath, "utf8");
   const parsed = parseJsonWithFallback(raw, filePath);
   return { canceled: false, filePath, result: parsed };
+});
+
+ipcMain.handle("open-eeg-recording-files", async () => {
+  const owner = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
+  const picked = await dialog.showOpenDialog(owner, {
+    title: "Open EEG Recording Files",
+    properties: ["openFile", "multiSelections"],
+    filters: [
+      { name: "EEG Recordings", extensions: ["edf", "fif", "csv", "tsv", "txt"] },
+      { name: "All Files", extensions: ["*"] },
+    ],
+  });
+  if (picked.canceled || !picked.filePaths.length) return { canceled: true };
+  return { canceled: false, filePaths: picked.filePaths };
+});
+
+ipcMain.handle("open-planner-window", () => {
+  createPlannerWindow();
+  return { ok: true };
 });
 
 ipcMain.handle("send-command", (_event, command) => {

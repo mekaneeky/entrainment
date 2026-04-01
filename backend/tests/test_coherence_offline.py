@@ -81,7 +81,7 @@ def test_offline_independent_files_do_not_fake_cross_file_coherence(tmp_path):
 
     assert _metric(result, "F3/F4", "Alpha coherence (EC)")["status"] != "MISSING"
     assert _metric(result, "F3/Cz", "Alpha coherence (EC)")["status"] == "MISSING"
-    assert _metric(result, "Cz", "Alpha bandpower (EC)")["status"] != "MISSING"
+    assert _metric(result, "Cz", "Alpha band amplitude (EC)")["status"] != "MISSING"
 
 
 def test_offline_parallel_files_can_merge_time_aligned_recordings(tmp_path):

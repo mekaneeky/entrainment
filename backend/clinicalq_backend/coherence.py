@@ -58,6 +58,30 @@ def _canonical_location(loc: str) -> str:
     return LEGACY_LOCATION_MAP.get(key, key)
 
 
+def _display_location(loc: str) -> str:
+    canonical = _canonical_location(loc)
+    if canonical == "GLOBAL":
+        return canonical
+
+    match = re.match(r"^([A-Z]+)(\d*)$", canonical)
+    if not match:
+        return canonical
+
+    prefix, suffix = match.groups()
+    if len(prefix) <= 1:
+        return f"{prefix}{suffix}"
+    return f"{prefix[0]}{prefix[1:].lower()}{suffix}"
+
+
+def _display_metric_location(location: str) -> str:
+    text = str(location).strip()
+    if "/" not in text:
+        return _display_location(text)
+
+    parts = [part for part in text.split("/") if part.strip()]
+    return "/".join(_display_location(part) for part in parts)
+
+
 def _amplitude_spectrum(signal: Iterable[float], sampling_rate: int) -> tuple[np.ndarray, np.ndarray]:
     x = _safe_signal(signal)
     x = x - np.mean(x)
@@ -424,7 +448,7 @@ def _append_metric_row(
         normal_range = f"{normal_range}; {source.split(':', 1)[1]}"
     probe = _probe_for_metric(metric_type, status, value, norm)
 
-    metrics.append(_as_metric(location, metric_label, value, normal_range, status, probe, formula))
+    metrics.append(_as_metric(_display_metric_location(location), metric_label, value, normal_range, status, probe, formula))
 
     row: Dict[str, Any] = {
         "metric_type": metric_type,
