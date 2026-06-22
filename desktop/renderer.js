@@ -61,11 +61,11 @@ const refs = {
 };
 
 const BAND_META = {
-  delta: { label: "Delta", color: "#a9302f" },
-  theta: { label: "Theta", color: "#0b8da3" },
-  alpha: { label: "Alpha", color: "#9b5b00" },
-  beta: { label: "Beta", color: "#1f7d48" },
-  hibeta: { label: "HiBeta", color: "#2b3a46" },
+  delta: { label: "Delta", color: "#96534a" },
+  theta: { label: "Theta", color: "#5f7778" },
+  alpha: { label: "Alpha", color: "#9a7451" },
+  beta: { label: "Beta", color: "#5c755f" },
+  hibeta: { label: "HiBeta", color: "#47423b" },
 };
 
 const LEGACY_LOCATION_MAP = {
@@ -696,10 +696,10 @@ function drawClinicalHeadMap(metrics) {
   const statusByLoc = headStatusForMetrics(metrics);
 
   ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = "#fbfcfb";
+  ctx.fillStyle = "#fbf8f2";
   ctx.fillRect(0, 0, width, height);
 
-  ctx.strokeStyle = "#9ba79f";
+  ctx.strokeStyle = "#b9ad9d";
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.ellipse(cx, cy, radius * 0.86, radius, 0, 0, Math.PI * 2);
@@ -719,7 +719,7 @@ function drawClinicalHeadMap(metrics) {
     const y = pos[1] * height;
     const status = statusByLoc.get(loc) || { in: 0, out: 0, missing: 0 };
     const total = status.in + status.out + status.missing;
-    const color = status.out ? "#a9302f" : status.in ? "#1f7d48" : "#d7ddd7";
+    const color = status.out ? "#96534a" : status.in ? "#5c755f" : "#ded5c8";
     const r = status.out ? 15 : 12;
     ctx.fillStyle = color;
     ctx.globalAlpha = total ? 0.9 : 0.45;
@@ -727,11 +727,11 @@ function drawClinicalHeadMap(metrics) {
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 1;
-    ctx.strokeStyle = "#ffffff";
+    ctx.strokeStyle = "#fffaf2";
     ctx.lineWidth = 2;
     ctx.stroke();
-    ctx.fillStyle = "#1d2525";
-    ctx.font = "12px Segoe UI";
+    ctx.fillStyle = "#292622";
+    ctx.font = "12px Aptos, Segoe UI, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(loc, x, y + r + 13);
   }
@@ -899,7 +899,7 @@ function drawBandpower() {
   if (!Number.isFinite(yMax) || yMax <= 0) yMax = 1.0;
   yMax *= 1.1;
 
-  ctx.strokeStyle = "rgba(0,0,0,0.08)";
+  ctx.strokeStyle = "rgba(110,82,56,0.14)";
   ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i += 1) {
     const y = padding.top + (plotH * i) / 4;
@@ -909,13 +909,13 @@ function drawBandpower() {
     ctx.stroke();
   }
 
-  ctx.fillStyle = "rgba(0,0,0,0.65)";
-  ctx.font = `${Math.max(11, Math.floor(11 * (size.dpr / (window.devicePixelRatio || 1))))}px Bahnschrift, sans-serif`;
+  ctx.fillStyle = "rgba(71,66,59,0.72)";
+  ctx.font = `${Math.max(11, Math.floor(11 * (size.dpr / (window.devicePixelRatio || 1))))}px Aptos, Segoe UI, sans-serif`;
   ctx.fillText(`${yMax.toFixed(1)} uV`, 6, padding.top + 10);
   ctx.fillText("0", 6, padding.top + plotH);
 
   const title = bandState.label ? `${displayLocation(loc)} ${bandState.label}` : displayLocation(loc);
-  ctx.fillStyle = "rgba(0,0,0,0.75)";
+  ctx.fillStyle = "rgba(41,38,34,0.82)";
   ctx.fillText(title, padding.left, padding.top + 10);
 
   const n = Math.max(2, xMax);

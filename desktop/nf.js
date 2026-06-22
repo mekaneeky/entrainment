@@ -123,7 +123,7 @@ const LOCATIONS = [
 const DEFAULT_LOCS = ["O1", "Cz", "Fz", "F3", "F4", "T3", "T4", "Pz"];
 const BAND_ORDER = ["delta", "theta", "alpha", "smr", "beta", "hibeta"];
 const BAND_LABELS = { delta: "Delta", theta: "Theta", alpha: "Alpha", smr: "SMR", beta: "Beta", hibeta: "HiBeta" };
-const COLORS = ["#225c8a", "#276b4b", "#a0661f", "#a23b32", "#5b5f77", "#16737d", "#7a4d1f", "#3f6b2f"];
+const COLORS = ["#6e5238", "#5c755f", "#9a7451", "#96534a", "#596f78", "#746d63", "#b08a5a", "#47423b"];
 
 const TRAIN_PROTOCOLS = [
   { id: "reward_smr_inhibit_theta", label: "Reward SMR, inhibit theta", group: "Cz / SMR", detail: "Cz SMR reward with theta inhibit.", channels: { Cz: 1 } },
@@ -291,11 +291,11 @@ function setupCanvas(canvas) {
 function clearCanvas(canvas, message = "") {
   const { ctx, width, height } = setupCanvas(canvas);
   ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = "#fbfcfb";
+  ctx.fillStyle = "#fbf8f2";
   ctx.fillRect(0, 0, width, height);
   if (message) {
-    ctx.fillStyle = "#697370";
-    ctx.font = "13px Segoe UI";
+    ctx.fillStyle = "#746d63";
+    ctx.font = "13px Aptos, Segoe UI, sans-serif";
     ctx.fillText(message, 18, 28);
   }
 }
@@ -437,7 +437,7 @@ function drawBaseline(result) {
   }
   const { ctx, width, height } = setupCanvas(refs.baselineCanvas);
   ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = "#fbfcfb";
+  ctx.fillStyle = "#fbf8f2";
   ctx.fillRect(0, 0, width, height);
 
   const margin = { left: 48, right: 16, top: 18, bottom: 52 };
@@ -445,20 +445,20 @@ function drawBaseline(result) {
   const plotH = height - margin.top - margin.bottom;
   const maxVal = Math.max(1, ...rows.flatMap((row) => BAND_ORDER.map((band) => Number(row.amplitudes?.[band] || 0))));
 
-  ctx.strokeStyle = "#d7ddd7";
+  ctx.strokeStyle = "#ded5c8";
   ctx.beginPath();
   ctx.moveTo(margin.left, margin.top);
   ctx.lineTo(margin.left, margin.top + plotH);
   ctx.lineTo(margin.left + plotW, margin.top + plotH);
   ctx.stroke();
 
-  ctx.fillStyle = "#697370";
-  ctx.font = "11px Segoe UI";
+  ctx.fillStyle = "#746d63";
+  ctx.font = "11px Aptos, Segoe UI, sans-serif";
   for (let i = 0; i <= 4; i += 1) {
     const y = margin.top + plotH - (plotH * i) / 4;
     const val = (maxVal * i) / 4;
     ctx.fillText(formatValue(val, 1), 8, y + 4);
-    ctx.strokeStyle = "#edf0ed";
+    ctx.strokeStyle = "#ebe3d8";
     ctx.beginPath();
     ctx.moveTo(margin.left, y);
     ctx.lineTo(margin.left + plotW, y);
@@ -475,7 +475,7 @@ function drawBaseline(result) {
       ctx.fillStyle = COLORS[bandIndex % COLORS.length];
       ctx.fillRect(baseX + bandIndex * barW, margin.top + plotH - h, Math.max(2, barW - 1), h);
     });
-    ctx.fillStyle = "#1d2525";
+    ctx.fillStyle = "#292622";
     ctx.fillText(row.location, margin.left + rowIndex * groupW + 6, height - 28);
   });
 
@@ -484,7 +484,7 @@ function drawBaseline(result) {
     const y = height - 10;
     ctx.fillStyle = COLORS[idx % COLORS.length];
     ctx.fillRect(x, y - 8, 10, 8);
-    ctx.fillStyle = "#37413d";
+    ctx.fillStyle = "#47423b";
     ctx.fillText(BAND_LABELS[band], x + 14, y);
   });
 }
@@ -838,7 +838,7 @@ function drawTrainFeedback() {
   if (!refs.trainFeedbackCanvas) return;
   const { ctx, width, height } = setupCanvas(refs.trainFeedbackCanvas);
   ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = "#fbfcfb";
+  ctx.fillStyle = "#fbf8f2";
   ctx.fillRect(0, 0, width, height);
 
   const windows = state.trainWindows.slice(-80);
@@ -855,8 +855,8 @@ function drawTrainFeedback() {
       const h = (Number(state.trainLastValues[label] || 0) / max) * (height - 82);
       ctx.fillStyle = COLORS[idx % COLORS.length];
       ctx.fillRect(x, height - 42 - h, barW, h);
-      ctx.fillStyle = "#37413d";
-      ctx.font = "11px Segoe UI";
+      ctx.fillStyle = "#47423b";
+      ctx.font = "11px Aptos, Segoe UI, sans-serif";
       ctx.fillText(label.slice(0, 12), x, height - 18);
     });
   } else if (mode === "field") {
@@ -866,7 +866,7 @@ function drawTrainFeedback() {
       const wobble = 10 * Math.sin(i + windows.length * 0.23);
       const x = width / 2 + Math.cos(angle) * (radius + wobble);
       const y = height / 2 + Math.sin(angle) * (radius * 0.62 + wobble);
-      ctx.fillStyle = feedback > 0 ? "#276b4b" : "#a23b32";
+      ctx.fillStyle = feedback > 0 ? "#5c755f" : "#96534a";
       ctx.globalAlpha = 0.25 + (i % 5) * 0.1;
       ctx.beginPath();
       ctx.arc(x, y, 5 + (i % 4), 0, Math.PI * 2);
@@ -878,20 +878,20 @@ function drawTrainFeedback() {
     const cy = height / 2 - 8;
     const r = Math.min(width, height) * 0.28;
     ctx.lineWidth = 18;
-    ctx.strokeStyle = "#eef2ef";
+    ctx.strokeStyle = "#ebe3d8";
     ctx.beginPath();
     ctx.arc(cx, cy, r, Math.PI * 0.85, Math.PI * 2.15);
     ctx.stroke();
-    ctx.strokeStyle = feedback > 0 ? "#276b4b" : "#a23b32";
+    ctx.strokeStyle = feedback > 0 ? "#5c755f" : "#96534a";
     ctx.beginPath();
     ctx.arc(cx, cy, r, Math.PI * 0.85, Math.PI * (0.85 + 1.3 * (pct / 100)));
     ctx.stroke();
-    ctx.fillStyle = "#1d2525";
-    ctx.font = "42px Segoe UI";
+    ctx.fillStyle = "#292622";
+    ctx.font = "42px Georgia, Times New Roman, serif";
     ctx.textAlign = "center";
     ctx.fillText(`${formatValue(pct, 0)}%`, cx, cy + 14);
-    ctx.font = "13px Segoe UI";
-    ctx.fillStyle = "#697370";
+    ctx.font = "13px Aptos, Segoe UI, sans-serif";
+    ctx.fillStyle = "#746d63";
     ctx.fillText("reward windows", cx, cy + 42);
     ctx.textAlign = "left";
   }
@@ -900,7 +900,7 @@ function drawTrainFeedback() {
     const x0 = 18;
     const y0 = height - 36;
     const plotW = width - 36;
-    ctx.strokeStyle = "#225c8a";
+    ctx.strokeStyle = "#596f78";
     ctx.lineWidth = 2;
     ctx.beginPath();
     windows.forEach((windowItem, idx) => {
@@ -1526,7 +1526,7 @@ function drawProgress() {
 
   const { ctx, width, height } = setupCanvas(refs.progressCanvas);
   ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = "#fbfcfb";
+  ctx.fillStyle = "#fbf8f2";
   ctx.fillRect(0, 0, width, height);
 
   const margin = { left: 58, right: 22, top: 20, bottom: 58 };
@@ -1551,20 +1551,20 @@ function drawProgress() {
     return margin.left + (Math.max(0, idx) / (sessions.length - 1)) * plotW;
   };
 
-  ctx.strokeStyle = "#d7ddd7";
+  ctx.strokeStyle = "#ded5c8";
   ctx.beginPath();
   ctx.moveTo(margin.left, margin.top);
   ctx.lineTo(margin.left, margin.top + plotH);
   ctx.lineTo(margin.left + plotW, margin.top + plotH);
   ctx.stroke();
 
-  ctx.font = "11px Segoe UI";
-  ctx.fillStyle = "#697370";
+  ctx.font = "11px Aptos, Segoe UI, sans-serif";
+  ctx.fillStyle = "#746d63";
   for (let i = 0; i <= 4; i += 1) {
     const value = minVal + ((maxVal - minVal) * i) / 4;
     const y = scaleY(value);
     ctx.fillText(formatValue(value, refs.plotZscores.checked ? 1 : 2), 10, y + 4);
-    ctx.strokeStyle = "#edf0ed";
+    ctx.strokeStyle = "#ebe3d8";
     ctx.beginPath();
     ctx.moveTo(margin.left, y);
     ctx.lineTo(margin.left + plotW, y);
@@ -1574,7 +1574,7 @@ function drawProgress() {
   if (refs.plotZscores.checked) {
     for (const z of [-2, 0, 2]) {
       const y = scaleY(z);
-      ctx.strokeStyle = z === 0 ? "#9ba79f" : "#d9b0aa";
+      ctx.strokeStyle = z === 0 ? "#b9ad9d" : "#d8b7ae";
       ctx.setLineDash(z === 0 ? [] : [5, 4]);
       ctx.beginPath();
       ctx.moveTo(margin.left, y);
@@ -1610,7 +1610,7 @@ function drawProgress() {
   (result.sessions || []).forEach((session, idx) => {
     if (idx % step !== 0 && idx !== result.sessions.length - 1) return;
     const x = xForDate(session.date);
-    ctx.fillStyle = "#697370";
+    ctx.fillStyle = "#746d63";
     ctx.save();
     ctx.translate(x - 4, height - 16);
     ctx.rotate(-0.5);
@@ -1623,7 +1623,7 @@ function drawProgress() {
     const x = margin.left + idx * 150;
     ctx.fillStyle = COLORS[idx % COLORS.length];
     ctx.fillRect(x, 8, 10, 8);
-    ctx.fillStyle = "#37413d";
+    ctx.fillStyle = "#47423b";
     ctx.fillText((metric?.label || key).slice(0, 22), x + 14, 16);
   });
 }

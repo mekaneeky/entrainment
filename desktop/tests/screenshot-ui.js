@@ -67,6 +67,13 @@ async function renderNfSamples(win) {
 
 async function renderClinicalSamples(win) {
   await win.webContents.executeJavaScript(`
+    window.scrollTo(0, 0);
+    window.dispatchEvent(new Event('resize'));
+  `);
+  await wait(180);
+  await capture(win, "clinicalq-studio.png");
+
+  await win.webContents.executeJavaScript(`
     const sample = {
       metrics: [
         { location: 'O1', metric: 'Theta/Beta ratio', value: 2.6, normal_range: '<=2.2', status: 'OUT_OF_RANGE', probe: 'Sleep onset / rumination?' },
