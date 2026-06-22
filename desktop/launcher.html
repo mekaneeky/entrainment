@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Brain Ocean</title>
+    <link rel="stylesheet" href="launcher.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <h1>Brain Ocean</h1>
+          <div id="runtimeStatus" class="status">Checking Python runtime...</div>
+        </div>
+        <div class="profile-picker">
+          <label>
+            Profile
+            <select id="profileSelect"></select>
+          </label>
+          <button id="newProfileBtn" type="button">New</button>
+        </div>
+      </header>
+
+      <section class="grid">
+        <button class="applet" data-applet="clinicalq" type="button">
+          <span class="applet-title">ClinicalQ</span>
+          <span class="applet-meta">Guided capture, ratios, sound probes, and profile sessions</span>
+        </button>
+        <button class="applet" data-applet="nf" type="button">
+          <span class="applet-title">Norms / Baseline</span>
+          <span class="applet-meta">Bandpower norms and profile progress tracking</span>
+        </button>
+        <button class="applet" data-applet="planner" type="button">
+          <span class="applet-title">Coherence Planner</span>
+          <span class="applet-meta">Plan multi-reading coverage for smaller OpenBCI montages</span>
+        </button>
+        <button class="applet" data-applet="disentrainment" type="button">
+          <span class="applet-title">Disentrainment</span>
+          <span class="applet-meta">Isochronic tone protocols, offset trials, and pre/post maps</span>
+        </button>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Recent Sessions</h2>
+          <button id="refreshBtn" type="button">Refresh</button>
+        </div>
+        <div id="sessionList" class="session-list"></div>
+      </section>
+    </main>
+
+    <dialog id="profileDialog">
+      <form method="dialog" class="dialog-body">
+        <h2>New Profile</h2>
+        <label>
+          Name
+          <input id="profileName" autocomplete="off" />
+        </label>
+        <label>
+          Notes
+          <textarea id="profileNotes" rows="3"></textarea>
+        </label>
+        <div class="dialog-actions">
+          <button value="cancel" type="submit">Cancel</button>
+          <button id="createProfileBtn" class="primary" value="default" type="button">Create</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="launcher.js"></script>
+  </body>
+</html>

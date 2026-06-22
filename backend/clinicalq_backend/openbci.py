@@ -69,6 +69,17 @@ class SimulatedBoard(BoardBase):
             beta_gain -= 0.7
         if label == "OMNI":
             theta_gain -= 0.8
+        if label == "SUB_BETA":
+            theta_gain += 1.2
+            beta_gain -= 0.6
+            hibeta_gain -= 0.3
+        if label == "SLEEP_SUPPORT":
+            theta_gain += 0.9
+            alpha_gain += 0.8
+            beta_gain -= 0.4
+        if label in {"SWEEP", "SWEEP_POST"}:
+            theta_gain -= 0.3
+            alpha_gain -= 0.2
         if label in {"TEST", "HARMONIC"}:
             alpha_gain += 0.6
             beta_gain += 0.3

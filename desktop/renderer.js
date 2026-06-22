@@ -1,13 +1,10 @@
 const refs = {
-  analysisType: document.getElementById("analysisType"),
-  coherenceNorms: document.getElementById("coherenceNorms"),
-  zscoreMode: document.getElementById("zscoreMode"),
-  subjectAge: document.getElementById("subjectAge"),
-  recordingSource: document.getElementById("recordingSource"),
+  clinicalLauncherBtn: document.getElementById("clinicalLauncherBtn"),
+  profileSelect: document.getElementById("profileSelect"),
+  sessionTags: document.getElementById("sessionTags"),
+  sessionNotes: document.getElementById("sessionNotes"),
   mode: document.getElementById("mode"),
   serialPort: document.getElementById("serialPort"),
-  pickRecordingsBtn: document.getElementById("pickRecordingsBtn"),
-  recordingSyncMode: document.getElementById("recordingSyncMode"),
   epochSeconds: document.getElementById("epochSeconds"),
   repositionSeconds: document.getElementById("repositionSeconds"),
   useSynthetic: document.getElementById("useSynthetic"),
@@ -22,20 +19,18 @@ const refs = {
   chF3: document.getElementById("chF3"),
   chF4: document.getElementById("chF4"),
   clinicalqChannelMapSection: document.getElementById("clinicalqChannelMapSection"),
-  qeegSettings: document.getElementById("qeegSettings"),
-  qeegHardware: document.getElementById("qeegHardware"),
-  qeegElectrodesPerReading: document.getElementById("qeegElectrodesPerReading"),
-  qeegReadingCount: document.getElementById("qeegReadingCount"),
-  qeegActiveReading: document.getElementById("qeegActiveReading"),
-  qeegPairCoverage: document.getElementById("qeegPairCoverage"),
-  qeegTargetLocations: document.getElementById("qeegTargetLocations"),
-  qeegAutoPlanBtn: document.getElementById("qeegAutoPlanBtn"),
-  qeegAnalyzePlanBtn: document.getElementById("qeegAnalyzePlanBtn"),
-  qeegCombineRuns: document.getElementById("qeegCombineRuns"),
-  qeegPlanSummary: document.getElementById("qeegPlanSummary"),
-  qeegReadings: document.getElementById("qeegReadings"),
-  qeegChannelTableBody: document.getElementById("qeegChannelTableBody"),
-  openPlannerBtn: document.getElementById("openPlannerBtn"),
+  clinicalqLocationSection: document.getElementById("clinicalqLocationSection"),
+  clinicalqSoundProbeSection: document.getElementById("clinicalqSoundProbeSection"),
+  locO1: document.getElementById("locO1"),
+  locCz: document.getElementById("locCz"),
+  locFz: document.getElementById("locFz"),
+  locF3: document.getElementById("locF3"),
+  locF4: document.getElementById("locF4"),
+  probeSubAlpha: document.getElementById("probeSubAlpha"),
+  probeSubBeta: document.getElementById("probeSubBeta"),
+  probeSubBetaLevel: document.getElementById("probeSubBetaLevel"),
+  probeSleepSupport: document.getElementById("probeSleepSupport"),
+  probeSweep: document.getElementById("probeSweep"),
   startBtn: document.getElementById("startBtn"),
   stopBtn: document.getElementById("stopBtn"),
   readyBtn: document.getElementById("readyBtn"),
@@ -61,17 +56,8 @@ const refs = {
   resultFilter: document.getElementById("resultFilter"),
   resultSource: document.getElementById("resultSource"),
   keyMetrics: document.getElementById("keyMetrics"),
-  artifactRanges: document.getElementById("artifactRanges"),
-  recordingFiles: document.getElementById("recordingFiles"),
-  vizMetricType: document.getElementById("vizMetricType"),
-  vizSiteBand: document.getElementById("vizSiteBand"),
-  vizPairBand: document.getElementById("vizPairBand"),
-  vizPairMetric: document.getElementById("vizPairMetric"),
-  vizPairThreshold: document.getElementById("vizPairThreshold"),
-  vizPairShowAll: document.getElementById("vizPairShowAll"),
-  vizHeadCanvas: document.getElementById("vizHeadCanvas"),
-  vizPairCanvas: document.getElementById("vizPairCanvas"),
-  vizSummary: document.getElementById("vizSummary"),
+  clinicalHeadCanvas: document.getElementById("clinicalHeadCanvas"),
+  clinicalHeadLegend: document.getElementById("clinicalHeadLegend"),
 };
 
 const BAND_META = {
@@ -90,105 +76,109 @@ const LEGACY_LOCATION_MAP = {
 };
 
 const DISPLAY_LOCATION_MAP = {
+  CZ: "Cz",
+  FZ: "Fz",
+  PZ: "Pz",
+  OZ: "Oz",
+  FPZ: "FPz",
+  FPO1: "FPo1",
+  FPO2: "FPo2",
   T7: "T3",
   T8: "T4",
   P7: "T5",
   P8: "T6",
 };
 
-const HEAD_COORDS_1020 = {
-  FP1: [-0.45, 0.92],
-  FP2: [0.45, 0.92],
-  F7: [-0.82, 0.46],
-  F3: [-0.46, 0.52],
-  FZ: [0.0, 0.56],
-  F4: [0.46, 0.52],
-  F8: [0.82, 0.46],
-  T7: [-0.9, 0.0],
-  C3: [-0.5, 0.02],
-  CZ: [0.0, 0.0],
-  C4: [0.5, 0.02],
-  T8: [0.9, 0.0],
-  P7: [-0.8, -0.46],
-  P3: [-0.46, -0.46],
-  PZ: [0.0, -0.5],
-  P4: [0.46, -0.46],
-  P8: [0.8, -0.46],
-  O1: [-0.34, -0.86],
-  OZ: [0.0, -0.9],
-  O2: [0.34, -0.86],
+const CLINICALQ_LOCATION_ORDER = ["O1", "Cz", "Fz", "F3", "F4"];
+
+const HEAD_POSITIONS = {
+  Fp1: [0.38, 0.16],
+  FPz: [0.5, 0.13],
+  Fp2: [0.62, 0.16],
+  F7: [0.22, 0.31],
+  F3: [0.37, 0.32],
+  Fz: [0.5, 0.29],
+  F4: [0.63, 0.32],
+  F8: [0.78, 0.31],
+  T3: [0.18, 0.52],
+  C3: [0.36, 0.52],
+  Cz: [0.5, 0.5],
+  C4: [0.64, 0.52],
+  T4: [0.82, 0.52],
+  T5: [0.24, 0.72],
+  P3: [0.39, 0.71],
+  Pz: [0.5, 0.73],
+  P4: [0.61, 0.71],
+  T6: [0.76, 0.72],
+  O1: [0.42, 0.88],
+  Oz: [0.5, 0.9],
+  O2: [0.58, 0.88],
 };
 
-const HARDWARE_PROFILES = {
-  cyton: {
-    id: "cyton",
-    boardId: "cyton",
-    maxChannels: 8,
-    referenceMap: {
-      CZ: 1,
-      O1: 2,
-      FZ: 3,
-      F3: 4,
-      F4: 5,
-      O2: 6,
-      PZ: 7,
-      C3: 8,
-    },
+const CLINICALQ_LOCATION_REFS = {
+  O1: "locO1",
+  Cz: "locCz",
+  Fz: "locFz",
+  F3: "locF3",
+  F4: "locF4",
+};
+
+const CLINICALQ_CHANNEL_REFS = {
+  O1: "chO1",
+  Cz: "chCz",
+  Fz: "chFz",
+  F3: "chF3",
+  F4: "chF4",
+};
+
+const CLINICALQ_PROBES = {
+  sub_alpha: {
+    checkboxRef: "probeSubAlpha",
+    label: "OMNI",
+    file: "../output/subliminal_sounds/sub_alpha_omni_10hz.wav",
+    requires: ["Cz"],
   },
-  cyton_daisy: {
-    id: "cyton_daisy",
-    boardId: "cyton_daisy",
-    maxChannels: 16,
-    referenceMap: {
-      FP1: 1,
-      FP2: 2,
-      F7: 3,
-      F3: 4,
-      FZ: 5,
-      F4: 6,
-      F8: 7,
-      T7: 8,
-      C3: 9,
-      CZ: 10,
-      C4: 11,
-      T8: 12,
-      P3: 13,
-      PZ: 14,
-      P4: 15,
-      O1: 16,
+  sub_beta: {
+    checkboxRef: "probeSubBeta",
+    label: "SUB_BETA",
+    selectRef: "probeSubBetaLevel",
+    file: () => {
+      const level = String(refs.probeSubBetaLevel?.value || "17");
+      return `../output/subliminal_sounds/sub_beta_serene_25hz_minus${level}db.wav`;
     },
+    requires: ["O1"],
+  },
+  sleep_support: {
+    checkboxRef: "probeSleepSupport",
+    label: "SLEEP_SUPPORT",
+    file: "../output/subliminal_sounds/sleep_support_sinusoidal.wav",
+    requires: ["O1"],
+  },
+  sweep: {
+    checkboxRef: "probeSweep",
+    label: "SWEEP",
+    file: "../output/subliminal_sounds/sweep_complex_harmonic.wav",
+    requires: ["F3", "F4"],
   },
 };
 
-const DEFAULT_TARGET_LOCATIONS = [
-  "FP1",
-  "FP2",
-  "F7",
-  "F3",
-  "FZ",
-  "F4",
-  "F8",
-  "T3",
-  "C3",
-  "CZ",
-  "C4",
-  "T4",
-  "T5",
-  "P3",
-  "PZ",
-  "P4",
-  "T6",
-  "O1",
-  "O2",
-];
+const PROBE_BY_LABEL = Object.fromEntries(
+  Object.entries(CLINICALQ_PROBES).map(([key, value]) => [value.label, { id: key, ...value }])
+);
 
 let running = false;
 let pendingReadyLocation = null;
 let activeLocation = null;
 let audioCtx = null;
+let activeProbeAudio = null;
 let epochContext = null;
 let nextWarnedEpochKey = null;
 let lastEpochLabel = null;
+
+const profileState = {
+  profiles: [],
+  activeProfileId: "default",
+};
 
 const bandState = {
   epochKey: null,
@@ -198,22 +188,11 @@ const bandState = {
   byLocation: {},
 };
 
-const qeegState = {
-  readings: [],
-  activeReading: 0,
-};
-
-const offlineRecordingState = {
-  filePaths: [],
-};
-
 const resultState = {
   metrics: [],
   summary: { in_range: 0, out_of_range: 0, missing: 0, potential_symptom_questions: [] },
   sourceLabel: "live session",
   rawResult: null,
-  coherenceRows: [],
-  combinedRuns: 0,
 };
 
 function clamp(value, min, max) {
@@ -237,21 +216,6 @@ function displayLocationLabel(text) {
     const key = String(match).toUpperCase();
     return DISPLAY_LOCATION_MAP[key] || key;
   });
-}
-
-function parseLocationList(text) {
-  const out = [];
-  const seen = new Set();
-  const parts = String(text || "").split(/[\s,;|]+/g);
-  for (const part of parts) {
-    const loc = canonicalLocation(part);
-    if (!loc) continue;
-    if (!/^[A-Z0-9]+$/.test(loc)) continue;
-    if (seen.has(loc)) continue;
-    seen.add(loc);
-    out.push(loc);
-  }
-  return out;
 }
 
 function toFiniteNumber(value) {
@@ -283,82 +247,45 @@ function statusBadge(status) {
   return { text: "MISSING", cls: "missing" };
 }
 
-function pairKey(a, b) {
-  const left = canonicalLocation(a);
-  const right = canonicalLocation(b);
-  if (!left || !right || left === right) return "";
-  return left < right ? `${left}|${right}` : `${right}|${left}`;
+function selectedClinicalqLocations() {
+  const selected = CLINICALQ_LOCATION_ORDER.filter((loc) => Boolean(refs[CLINICALQ_LOCATION_REFS[loc]]?.checked));
+  return selected;
 }
 
-function pairFromKey(key) {
-  const [left, right] = String(key || "").split("|");
-  return [left || "", right || ""];
+function selectedClinicalqSoundProbes() {
+  const selectedLocations = new Set(selectedClinicalqLocations());
+  return Object.entries(CLINICALQ_PROBES)
+    .filter(([, def]) => Boolean(refs[def.checkboxRef]?.checked))
+    .filter(([, def]) => (def.requires || []).every((loc) => selectedLocations.has(loc)))
+    .map(([key]) => key);
 }
 
-function allPairsFromLocations(locations) {
-  const out = [];
-  for (let i = 0; i < locations.length; i += 1) {
-    for (let j = i + 1; j < locations.length; j += 1) {
-      out.push([locations[i], locations[j]]);
+function clinicalqChannelMapForLocations(locations) {
+  const channels = {};
+  for (const loc of locations) {
+    const refName = CLINICALQ_CHANNEL_REFS[loc];
+    channels[loc] = Number(refs[refName]?.value || 1);
+  }
+  return channels;
+}
+
+function syncClinicalqLocationControls() {
+  for (const loc of CLINICALQ_LOCATION_ORDER) {
+    const locationInput = refs[CLINICALQ_LOCATION_REFS[loc]];
+    const channelInput = refs[CLINICALQ_CHANNEL_REFS[loc]];
+    if (locationInput) locationInput.disabled = running;
+    if (channelInput) channelInput.disabled = running || !Boolean(locationInput?.checked);
+  }
+  const selectedLocations = new Set(selectedClinicalqLocations());
+  for (const def of Object.values(CLINICALQ_PROBES)) {
+    const input = refs[def.checkboxRef];
+    if (!input) continue;
+    const missingRequiredLocation = (def.requires || []).some((loc) => !selectedLocations.has(loc));
+    input.disabled = running || missingRequiredLocation;
+    if (def.selectRef && refs[def.selectRef]) {
+      refs[def.selectRef].disabled = running || missingRequiredLocation || !input.checked;
     }
   }
-  return out;
-}
-
-function selectedAnalysisType() {
-  return String(refs.analysisType?.value || "clinicalq").toLowerCase();
-}
-
-function selectedZscoreMode() {
-  return String(refs.zscoreMode?.value || "global").toLowerCase();
-}
-
-function selectedRecordingSource() {
-  return String(refs.recordingSource?.value || "live").toLowerCase();
-}
-
-function selectedRecordingSyncMode() {
-  return String(refs.recordingSyncMode?.value || "parallel").toLowerCase();
-}
-
-function offlineCoherenceModeEnabled() {
-  return selectedAnalysisType() === "coherence" && selectedRecordingSource() === "existing_recordings";
-}
-
-function selectedHardwareProfile() {
-  const key = String(refs.qeegHardware?.value || "cyton").toLowerCase();
-  return HARDWARE_PROFILES[key] || HARDWARE_PROFILES.cyton;
-}
-
-function hardwareMaxChannels() {
-  return selectedHardwareProfile().maxChannels;
-}
-
-function electrodesPerReading() {
-  const maxCh = hardwareMaxChannels();
-  const raw = Number(refs.qeegElectrodesPerReading?.value || maxCh);
-  const value = clamp(Number.isFinite(raw) ? Math.floor(raw) : maxCh, 2, maxCh);
-  if (refs.qeegElectrodesPerReading) {
-    refs.qeegElectrodesPerReading.max = String(maxCh);
-    refs.qeegElectrodesPerReading.value = String(value);
-  }
-  return value;
-}
-
-function readingCount() {
-  const raw = Number(refs.qeegReadingCount?.value || 2);
-  const value = clamp(Number.isFinite(raw) ? Math.floor(raw) : 2, 1, 6);
-  if (refs.qeegReadingCount) refs.qeegReadingCount.value = String(value);
-  return value;
-}
-
-function ensureReadingSlots() {
-  const count = readingCount();
-  while (qeegState.readings.length < count) {
-    qeegState.readings.push({ locations: [], channelMap: {} });
-  }
-  if (qeegState.readings.length > count) qeegState.readings.length = count;
-  qeegState.activeReading = clamp(qeegState.activeReading, 0, Math.max(0, count - 1));
 }
 
 function ensureBandLocationSeries(loc) {
@@ -387,492 +314,6 @@ function refreshBandLocationOptions(preferred = "") {
 function seedBandLocations(locations) {
   for (const loc of locations) ensureBandLocationSeries(loc);
   refreshBandLocationOptions(activeLocation || "");
-}
-
-function fillMissingChannelAssignments(readingIndex) {
-  const reading = qeegState.readings[readingIndex];
-  if (!reading) return;
-  if (selectedRecordingSource() === "existing_recordings") {
-    const normalized = {};
-    for (const loc of reading.locations) {
-      const current = reading.channelMap?.[loc];
-      const text = String(current ?? "").trim();
-      normalized[loc] = text || loc;
-    }
-    reading.channelMap = normalized;
-    return;
-  }
-
-  const profile = selectedHardwareProfile();
-  const maxCh = profile.maxChannels;
-  const refMap = profile.referenceMap;
-
-  const normalized = {};
-  const used = new Set();
-
-  for (const loc of reading.locations) {
-    const current = Number(reading.channelMap?.[loc]);
-    if (Number.isInteger(current) && current >= 1 && current <= maxCh) {
-      normalized[loc] = current;
-      used.add(current);
-    }
-  }
-
-  const nextFree = () => {
-    for (let ch = 1; ch <= maxCh; ch += 1) {
-      if (!used.has(ch)) return ch;
-    }
-    return 1;
-  };
-
-  for (const loc of reading.locations) {
-    if (Object.prototype.hasOwnProperty.call(normalized, loc)) continue;
-    const ref = Number(refMap?.[loc]);
-    let chosen = Number.isInteger(ref) && ref >= 1 && ref <= maxCh && !used.has(ref) ? ref : nextFree();
-    normalized[loc] = chosen;
-    used.add(chosen);
-  }
-
-  reading.channelMap = normalized;
-}
-
-function duplicateChannels(channelMap) {
-  const seen = new Set();
-  const dupes = new Set();
-  for (const value of Object.values(channelMap || {})) {
-    const ch = Number(value);
-    if (!Number.isInteger(ch)) continue;
-    if (seen.has(ch)) dupes.add(ch);
-    seen.add(ch);
-  }
-  return [...dupes].sort((a, b) => a - b);
-}
-
-function normalizeChannelInput(value) {
-  const text = String(value ?? "").trim();
-  if (!text) return null;
-  if (/^\d+$/.test(text)) return Number(text);
-  return text;
-}
-
-function parseTimeRanges(text) {
-  const lines = String(text || "")
-    .split(/\r?\n|;/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-  const out = [];
-  for (const line of lines) {
-    const match = line.match(/^\s*(-?\d+(?:\.\d+)?)\s*[-,]\s*(-?\d+(?:\.\d+)?)\s*$/);
-    if (!match) {
-      throw new Error(`Invalid artifact range "${line}". Use start-end in seconds.`);
-    }
-    const a = Number(match[1]);
-    const b = Number(match[2]);
-    if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) {
-      throw new Error(`Invalid artifact range "${line}".`);
-    }
-    out.push([Math.min(a, b), Math.max(a, b)]);
-  }
-  return out;
-}
-
-function shortFileName(filePath) {
-  return String(filePath || "").replace(/^.*[\\/]/, "");
-}
-
-function renderRecordingFiles() {
-  if (!refs.recordingFiles) return;
-  if (!offlineRecordingState.filePaths.length) {
-    refs.recordingFiles.textContent = "No imported EEG files selected.";
-    return;
-  }
-  const mode = selectedRecordingSyncMode() === "parallel" ? "parallel synced files" : "independent files";
-  const lines = [`${offlineRecordingState.filePaths.length} EEG file(s) selected as ${mode}:`];
-  for (const filePath of offlineRecordingState.filePaths) {
-    lines.push(`- ${shortFileName(filePath)}`);
-  }
-  refs.recordingFiles.textContent = lines.join("\n");
-}
-
-function targetLocations() {
-  const list = parseLocationList(refs.qeegTargetLocations?.value || "");
-  return list.length ? list : [...DEFAULT_TARGET_LOCATIONS];
-}
-
-function targetPairKeySet() {
-  const set = new Set();
-  const locations = targetLocations();
-  for (const [a, b] of allPairsFromLocations(locations)) {
-    const key = pairKey(a, b);
-    if (key) set.add(key);
-  }
-  return set;
-}
-
-function suggestPlacementForMissing(missingPairKeys, capacity) {
-  if (!missingPairKeys.length || capacity <= 1) return [];
-
-  const missingPairs = missingPairKeys.map((key) => pairFromKey(key));
-  const candidates = new Set();
-  for (const [a, b] of missingPairs) {
-    if (a) candidates.add(a);
-    if (b) candidates.add(b);
-  }
-
-  const selected = [];
-  while (selected.length < capacity && candidates.size > selected.length) {
-    let best = "";
-    let bestGain = -1;
-
-    for (const loc of candidates) {
-      if (selected.includes(loc)) continue;
-      let gain = 0;
-      for (const [a, b] of missingPairs) {
-        const currentCovered = selected.includes(a) && selected.includes(b);
-        if (currentCovered) continue;
-        const nextCovered = (a === loc || selected.includes(a)) && (b === loc || selected.includes(b));
-        if (nextCovered) gain += 1;
-      }
-      if (gain > bestGain) {
-        bestGain = gain;
-        best = loc;
-      }
-    }
-
-    if (!best) break;
-    selected.push(best);
-    if (bestGain <= 0 && selected.length >= 2) break;
-  }
-
-  return selected;
-}
-
-function analyzeQeegPlan() {
-  const targetPairs = targetPairKeySet();
-  const coveredPairs = new Set();
-  const perReading = [];
-
-  for (const reading of qeegState.readings) {
-    const localPairs = allPairsFromLocations(reading.locations);
-    let matched = 0;
-    for (const [a, b] of localPairs) {
-      const key = pairKey(a, b);
-      if (!key) continue;
-      if (!targetPairs.size || targetPairs.has(key)) {
-        if (!coveredPairs.has(key)) matched += 1;
-        coveredPairs.add(key);
-      }
-    }
-    perReading.push({
-      electrodes: reading.locations.length,
-      pairs: localPairs.length,
-      targetPairsCoveredNow: matched,
-    });
-  }
-
-  const missing = [];
-  for (const key of targetPairs) {
-    if (!coveredPairs.has(key)) missing.push(key);
-  }
-
-  const suggestion = suggestPlacementForMissing(missing, electrodesPerReading());
-  return {
-    targetLocationCount: targetLocations().length,
-    targetPairCount: targetPairs.size,
-    coveredPairCount: coveredPairs.size,
-    missingPairCount: missing.length,
-    missingPairKeys: missing,
-    suggestion,
-    perReading,
-  };
-}
-
-function renderActiveReadingSelector() {
-  if (!refs.qeegActiveReading) return;
-  refs.qeegActiveReading.innerHTML = "";
-  for (let i = 0; i < qeegState.readings.length; i += 1) {
-    const option = document.createElement("option");
-    option.value = String(i);
-    option.textContent = `Reading ${i + 1}`;
-    refs.qeegActiveReading.appendChild(option);
-  }
-  refs.qeegActiveReading.value = String(qeegState.activeReading);
-}
-
-function renderQeegReadings() {
-  if (!refs.qeegReadings) return;
-  refs.qeegReadings.innerHTML = "";
-  const limit = electrodesPerReading();
-
-  qeegState.readings.forEach((reading, idx) => {
-    const card = document.createElement("div");
-    card.className = "qeeg-reading-card";
-
-    const head = document.createElement("div");
-    head.className = "qeeg-reading-head";
-
-    const title = document.createElement("div");
-    title.className = "qeeg-reading-title";
-    title.textContent = `Reading ${idx + 1}`;
-
-    const stats = document.createElement("div");
-    stats.className = "qeeg-reading-stats";
-    stats.textContent = `${reading.locations.length}/${limit} electrodes`;
-
-    head.appendChild(title);
-    head.appendChild(stats);
-
-    const row = document.createElement("div");
-    row.className = "grid two-col";
-
-    const label = document.createElement("label");
-    label.textContent = "Mounted locations";
-    const area = document.createElement("textarea");
-    area.rows = 2;
-    area.value = reading.locations.map((loc) => displayLocation(loc)).join(", ");
-    area.placeholder = "Example: F3, F4, Cz, Pz, O1";
-    area.addEventListener("change", () => {
-      const parsed = parseLocationList(area.value).slice(0, limit);
-      reading.locations = parsed;
-      fillMissingChannelAssignments(idx);
-      if (idx === qeegState.activeReading) {
-        renderQeegChannelMap();
-        seedBandLocations(parsed);
-      }
-      renderQeegReadings();
-      updateQeegPlanSummary();
-    });
-    label.appendChild(area);
-
-    const controls = document.createElement("div");
-    controls.className = "actions";
-
-    const useBtn = document.createElement("button");
-    useBtn.type = "button";
-    useBtn.className = idx === qeegState.activeReading ? "primary" : "secondary";
-    useBtn.textContent = idx === qeegState.activeReading ? "Active Reading" : "Use For Next Run";
-    useBtn.disabled = idx === qeegState.activeReading;
-    useBtn.addEventListener("click", () => {
-      qeegState.activeReading = idx;
-      renderActiveReadingSelector();
-      renderQeegReadings();
-      renderQeegChannelMap();
-      seedBandLocations(reading.locations);
-      syncSessionUi();
-    });
-    controls.appendChild(useBtn);
-
-    row.appendChild(label);
-    row.appendChild(controls);
-
-    card.appendChild(head);
-    card.appendChild(row);
-    refs.qeegReadings.appendChild(card);
-  });
-}
-
-function renderQeegChannelMap() {
-  if (!refs.qeegChannelTableBody) return;
-  const reading = qeegState.readings[qeegState.activeReading];
-  refs.qeegChannelTableBody.innerHTML = "";
-  if (!reading || !reading.locations.length) {
-    const tr = document.createElement("tr");
-    const td = document.createElement("td");
-    td.colSpan = 2;
-    td.textContent = "No locations defined for this reading.";
-    tr.appendChild(td);
-    refs.qeegChannelTableBody.appendChild(tr);
-    return;
-  }
-
-  fillMissingChannelAssignments(qeegState.activeReading);
-  const maxCh = hardwareMaxChannels();
-  const offlineMode = selectedRecordingSource() === "existing_recordings";
-
-  for (const loc of reading.locations) {
-    const tr = document.createElement("tr");
-
-    const locTd = document.createElement("td");
-    locTd.textContent = displayLocation(loc);
-    tr.appendChild(locTd);
-
-    const chTd = document.createElement("td");
-    const input = document.createElement("input");
-    input.type = offlineMode ? "text" : "number";
-    if (!offlineMode) {
-      input.min = "1";
-      input.max = String(maxCh);
-    }
-    input.value = String(reading.channelMap?.[loc] || "");
-    input.placeholder = offlineMode ? `e.g. ${loc}` : "1";
-    input.addEventListener("change", () => {
-      if (offlineMode) {
-        const normalized = normalizeChannelInput(input.value);
-        reading.channelMap[loc] = normalized === null ? loc : normalized;
-      } else {
-        const numeric = Number(input.value);
-        if (Number.isInteger(numeric) && numeric >= 1 && numeric <= maxCh) {
-          reading.channelMap[loc] = numeric;
-        }
-      }
-      updateQeegPlanSummary();
-    });
-    chTd.appendChild(input);
-    tr.appendChild(chTd);
-
-    refs.qeegChannelTableBody.appendChild(tr);
-  }
-}
-
-function updateQeegPlanSummary() {
-  if (!refs.qeegPlanSummary) return;
-  const report = analyzeQeegPlan();
-  const missingPreview = report.missingPairKeys
-    .slice(0, 12)
-    .map((key) => pairFromKey(key).map((loc) => displayLocation(loc)).join("-"));
-  const activeMap = qeegState.readings[qeegState.activeReading]?.channelMap || {};
-  const dupes = duplicateChannels(activeMap);
-
-  const lines = [
-    `Target locations: ${report.targetLocationCount}`,
-    `Target pairs: ${report.targetPairCount}`,
-    `Covered pairs: ${report.coveredPairCount}`,
-    `Missing pairs: ${report.missingPairCount}`,
-  ];
-
-  if (dupes.length) {
-    lines.push(`Warning: duplicate channel assignments in active reading: ${dupes.join(", ")}`);
-  }
-
-  if (report.suggestion.length) {
-    lines.push(
-      `Suggested next placement (${electrodesPerReading()} max): ${report.suggestion
-        .map((loc) => displayLocation(loc))
-        .join(", ")}`
-    );
-  }
-
-  if (missingPreview.length) {
-    lines.push(`Missing pair examples: ${missingPreview.join(", ")}${report.missingPairCount > missingPreview.length ? " ..." : ""}`);
-  }
-
-  refs.qeegPlanSummary.textContent = lines.join(" | ");
-}
-
-function autoPlanReadings() {
-  ensureReadingSlots();
-  const targets = targetLocations();
-  const capacity = electrodesPerReading();
-  let cursor = 0;
-
-  for (let i = 0; i < qeegState.readings.length; i += 1) {
-    const base = targets.slice(cursor, cursor + capacity);
-    cursor += base.length;
-
-    const fill = [];
-    let ptr = 0;
-    while (base.length + fill.length < capacity && targets.length) {
-      const candidate = targets[ptr % targets.length];
-      if (!base.includes(candidate) && !fill.includes(candidate)) fill.push(candidate);
-      ptr += 1;
-      if (ptr > targets.length * 2) break;
-    }
-
-    qeegState.readings[i].locations = [...base, ...fill].slice(0, capacity);
-    fillMissingChannelAssignments(i);
-  }
-
-  renderQeegReadings();
-  renderQeegChannelMap();
-  updateQeegPlanSummary();
-
-  const active = qeegState.readings[qeegState.activeReading];
-  seedBandLocations(active?.locations || []);
-}
-
-function initializeQeegPlanner() {
-  ensureReadingSlots();
-
-  if (!refs.qeegTargetLocations?.value?.trim()) {
-    refs.qeegTargetLocations.value = DEFAULT_TARGET_LOCATIONS.join(", ");
-  }
-
-  autoPlanReadings();
-  renderActiveReadingSelector();
-
-  if (refs.qeegActiveReading) {
-    refs.qeegActiveReading.addEventListener("change", () => {
-      const idx = Number(refs.qeegActiveReading.value);
-      qeegState.activeReading = clamp(Number.isFinite(idx) ? idx : 0, 0, Math.max(0, qeegState.readings.length - 1));
-      renderQeegReadings();
-      renderQeegChannelMap();
-      updateQeegPlanSummary();
-      const active = qeegState.readings[qeegState.activeReading];
-      seedBandLocations(active?.locations || []);
-      syncSessionUi();
-    });
-  }
-
-  if (refs.qeegHardware) {
-    refs.qeegHardware.addEventListener("change", () => {
-      electrodesPerReading();
-      for (let i = 0; i < qeegState.readings.length; i += 1) fillMissingChannelAssignments(i);
-      renderQeegReadings();
-      renderQeegChannelMap();
-      updateQeegPlanSummary();
-      syncSessionUi();
-    });
-  }
-
-  if (refs.qeegElectrodesPerReading) {
-    refs.qeegElectrodesPerReading.addEventListener("change", () => {
-      const limit = electrodesPerReading();
-      for (let i = 0; i < qeegState.readings.length; i += 1) {
-        qeegState.readings[i].locations = qeegState.readings[i].locations.slice(0, limit);
-        fillMissingChannelAssignments(i);
-      }
-      renderQeegReadings();
-      renderQeegChannelMap();
-      updateQeegPlanSummary();
-    });
-  }
-
-  if (refs.qeegReadingCount) {
-    refs.qeegReadingCount.addEventListener("change", () => {
-      ensureReadingSlots();
-      renderActiveReadingSelector();
-      renderQeegReadings();
-      renderQeegChannelMap();
-      updateQeegPlanSummary();
-      syncSessionUi();
-    });
-  }
-
-  if (refs.qeegTargetLocations) {
-    refs.qeegTargetLocations.addEventListener("change", () => {
-      updateQeegPlanSummary();
-    });
-  }
-
-  if (refs.qeegPairCoverage) {
-    refs.qeegPairCoverage.addEventListener("change", () => {
-      updateQeegPlanSummary();
-    });
-  }
-
-  if (refs.qeegAutoPlanBtn) {
-    refs.qeegAutoPlanBtn.addEventListener("click", () => {
-      autoPlanReadings();
-      appendEventRow("QEEG auto-plan generated.");
-    });
-  }
-
-  if (refs.qeegAnalyzePlanBtn) {
-    refs.qeegAnalyzePlanBtn.addEventListener("click", () => {
-      updateQeegPlanSummary();
-      appendEventRow("QEEG plan coverage updated.");
-    });
-  }
 }
 
 function shouldLogEvent(name) {
@@ -924,8 +365,10 @@ function beepOnce(freq, durationSec) {
 function cuePattern(label) {
   const normalized = String(label || "").toUpperCase();
   if (normalized === "EO") return { freq: 660, count: 1 };
-  if (normalized === "EC" || normalized === "FRONTAL_EC") return { freq: 440, count: 2 };
-  if (["READ", "COUNT", "OMNI", "TEST", "HARMONIC"].includes(normalized)) return { freq: 880, count: 3 };
+  if (normalized === "EC" || normalized === "FRONTAL_EC" || normalized === "SWEEP_POST") return { freq: 440, count: 2 };
+  if (["READ", "COUNT", "OMNI", "SUB_BETA", "SLEEP_SUPPORT", "SWEEP"].includes(normalized)) {
+    return { freq: 880, count: 3 };
+  }
   return { freq: 520, count: 1 };
 }
 
@@ -934,6 +377,35 @@ function playCue(label) {
   for (let i = 0; i < pat.count; i += 1) {
     window.setTimeout(() => beepOnce(pat.freq, 0.12), i * 160);
   }
+}
+
+function stopProbeAudio() {
+  if (!activeProbeAudio) return;
+  try {
+    activeProbeAudio.pause();
+    activeProbeAudio.currentTime = 0;
+  } catch {
+    // ignore
+  }
+  activeProbeAudio = null;
+}
+
+function playProbeAudio(label) {
+  const normalized = String(label || "").toUpperCase();
+  const def = PROBE_BY_LABEL[normalized];
+  stopProbeAudio();
+  if (!def) return;
+
+  const file = typeof def.file === "function" ? def.file() : def.file;
+  if (!file) return;
+
+  const audio = new Audio(file);
+  audio.loop = true;
+  audio.volume = 1.0;
+  activeProbeAudio = audio;
+  audio.play().catch((err) => {
+    appendEventRow(`Probe audio could not start: ${err?.message || err}`);
+  });
 }
 
 function setCueBanner(text) {
@@ -1091,27 +563,6 @@ function findMetricsContainer(root) {
   return null;
 }
 
-function extractCoherenceRows(root) {
-  if (!root || typeof root !== "object") return [];
-  const queue = [root];
-  const seen = new Set();
-
-  while (queue.length) {
-    const node = queue.shift();
-    if (!node || typeof node !== "object") continue;
-    if (seen.has(node)) continue;
-    seen.add(node);
-
-    const rows = node?.derived?.coherence?.rows;
-    if (Array.isArray(rows)) return rows;
-
-    for (const value of Object.values(node)) {
-      if (value && typeof value === "object") queue.push(value);
-    }
-  }
-  return [];
-}
-
 function summarizeMetrics(metrics) {
   const summary = { in_range: 0, out_of_range: 0, missing: 0, potential_symptom_questions: [] };
   const seenProbes = new Set();
@@ -1210,27 +661,135 @@ function renderProbeList(summary) {
   }
 }
 
+function headStatusForMetrics(metrics) {
+  const map = new Map();
+  for (const metric of metrics) {
+    const loc = displayLocation(metric.location);
+    if (!loc || loc === "-") continue;
+    const current = map.get(loc) || { in: 0, out: 0, missing: 0, worst: 0 };
+    const status = normalizeStatus(metric.status);
+    if (status === "OUT_OF_RANGE") {
+      current.out += 1;
+      current.worst = Math.max(current.worst, Math.abs(Number(metric.value) || 0));
+    } else if (status === "IN_RANGE") {
+      current.in += 1;
+    } else {
+      current.missing += 1;
+    }
+    map.set(loc, current);
+  }
+  return map;
+}
+
+function drawClinicalHeadMap(metrics) {
+  const canvas = refs.clinicalHeadCanvas;
+  if (!canvas) return;
+  const size = resizeCanvasToDisplaySize(canvas);
+  if (!size) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  const width = size.width;
+  const height = size.height;
+  const cx = width / 2;
+  const cy = height / 2;
+  const radius = Math.min(width, height) * 0.38;
+  const statusByLoc = headStatusForMetrics(metrics);
+
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = "#fbfcfb";
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.strokeStyle = "#9ba79f";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, radius * 0.86, radius, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx - radius * 0.11, cy - radius * 0.98);
+  ctx.lineTo(cx, cy - radius * 1.1);
+  ctx.lineTo(cx + radius * 0.11, cy - radius * 0.98);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx - radius * 0.88, cy, radius * 0.08, Math.PI * 0.55, Math.PI * 1.45);
+  ctx.arc(cx + radius * 0.88, cy, radius * 0.08, Math.PI * 1.55, Math.PI * 0.45);
+  ctx.stroke();
+
+  for (const [loc, pos] of Object.entries(HEAD_POSITIONS)) {
+    const x = pos[0] * width;
+    const y = pos[1] * height;
+    const status = statusByLoc.get(loc) || { in: 0, out: 0, missing: 0 };
+    const total = status.in + status.out + status.missing;
+    const color = status.out ? "#a9302f" : status.in ? "#1f7d48" : "#d7ddd7";
+    const r = status.out ? 15 : 12;
+    ctx.fillStyle = color;
+    ctx.globalAlpha = total ? 0.9 : 0.45;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = "#1d2525";
+    ctx.font = "12px Segoe UI";
+    ctx.textAlign = "center";
+    ctx.fillText(loc, x, y + r + 13);
+  }
+  ctx.textAlign = "left";
+}
+
+function renderClinicalHeadLegend(metrics) {
+  if (!refs.clinicalHeadLegend) return;
+  refs.clinicalHeadLegend.innerHTML = "";
+  const map = headStatusForMetrics(metrics);
+  const rows = [...map.entries()]
+    .filter(([, status]) => status.in + status.out + status.missing > 0)
+    .sort((a, b) => b[1].out - a[1].out || a[0].localeCompare(b[0]));
+  if (!rows.length) {
+    const row = document.createElement("div");
+    row.className = "headmap-item";
+    row.innerHTML = "<strong>-</strong><span>No mapped metrics yet.</span><span></span>";
+    refs.clinicalHeadLegend.appendChild(row);
+    return;
+  }
+  for (const [loc, status] of rows.slice(0, 8)) {
+    const row = document.createElement("div");
+    row.className = "headmap-item";
+    const name = document.createElement("strong");
+    name.textContent = loc;
+    const detail = document.createElement("span");
+    detail.textContent = `${status.in} in, ${status.out} out, ${status.missing} missing`;
+    const badge = document.createElement("span");
+    badge.className = `badge ${status.out ? "out" : "in"}`;
+    badge.textContent = status.out ? "OUT" : "IN";
+    row.appendChild(name);
+    row.appendChild(detail);
+    row.appendChild(badge);
+    refs.clinicalHeadLegend.appendChild(row);
+  }
+}
+
 function clearResults() {
   resultState.metrics = [];
   resultState.summary = { in_range: 0, out_of_range: 0, missing: 0, potential_symptom_questions: [] };
   resultState.sourceLabel = "live session";
   resultState.rawResult = null;
-  resultState.coherenceRows = [];
-  resultState.combinedRuns = 0;
 
   if (refs.resultsTableBody) refs.resultsTableBody.innerHTML = "";
   if (refs.probeList) refs.probeList.innerHTML = "";
   if (refs.keyMetrics) refs.keyMetrics.innerHTML = "";
+  drawClinicalHeadMap([]);
+  renderClinicalHeadLegend([]);
   if (refs.resultSource) refs.resultSource.textContent = "Source: live session";
   if (refs.summary) refs.summary.textContent = "Running session...";
-
-  redrawVisualizations();
 }
 
 function redrawResults() {
   const visibleMetrics = resultState.metrics.filter((metric) => isMetricVisible(metric));
   renderResultTable(visibleMetrics);
   renderProbeList(resultState.summary);
+  drawClinicalHeadMap(resultState.metrics);
+  renderClinicalHeadLegend(resultState.metrics);
 
   const total = resultState.metrics.length;
   const shown = visibleMetrics.length;
@@ -1241,183 +800,6 @@ function redrawResults() {
   }
 
   if (refs.resultSource) refs.resultSource.textContent = `Source: ${resultState.sourceLabel || "live session"}`;
-}
-
-function metricNeedsBand(metricType) {
-  return ["coherence", "phase", "asymmetry", "total_coherence", "band_amplitude", "absolute_power", "relative_power"].includes(
-    String(metricType || "")
-  );
-}
-
-function syncVizUi() {
-  const metricType = String(refs.vizMetricType?.value || "absolute_power");
-  const needsBand = metricNeedsBand(metricType);
-  if (refs.vizSiteBand) refs.vizSiteBand.disabled = !needsBand;
-}
-
-function metricLocationKey(rawLocation) {
-  const text = String(rawLocation || "").trim();
-  if (!text) return "loc:-";
-
-  const pairMatch = text.match(/^([A-Za-z0-9]+)\s*[\/|-]\s*([A-Za-z0-9]+)$/);
-  if (pairMatch) {
-    const key = pairKey(pairMatch[1], pairMatch[2]);
-    return key ? `pair:${key}` : `raw:${text.toUpperCase()}`;
-  }
-
-  const canonical = canonicalLocation(text);
-  return canonical ? `loc:${canonical}` : `raw:${text.toUpperCase()}`;
-}
-
-function metricRecordKey(metric) {
-  const locKey = metricLocationKey(metric?.location);
-  const name = String(metric?.metric || "")
-    .trim()
-    .toLowerCase();
-  return `${locKey}|${name}`;
-}
-
-function mergeMetrics(existing, incoming) {
-  const map = new Map();
-  for (const metric of existing || []) map.set(metricRecordKey(metric), metric);
-  for (const metric of incoming || []) map.set(metricRecordKey(metric), metric);
-  return [...map.values()];
-}
-
-function coherenceRowId(row) {
-  const metricType = String(row?.metric_type || "");
-  const band = String(row?.band || "");
-  const pair = rowPair(row);
-  if (pair) {
-    const key = pairKey(pair[0], pair[1]);
-    return `${metricType}|${band}|pair:${key || ""}`;
-  }
-  const location = rowLocation(row);
-  return `${metricType}|${band}|loc:${location || ""}`;
-}
-
-function mergeCoherenceRows(existing, incoming) {
-  const merged = new Map();
-
-  const ingest = (row) => {
-    const key = coherenceRowId(row);
-    if (!key) return;
-    const weightRaw = Number(row?.n_epochs);
-    const weight = Number.isFinite(weightRaw) && weightRaw > 0 ? weightRaw : 1;
-    const value = Number(row?.value);
-    const z = Number(row?.zscore);
-    const clone = JSON.parse(JSON.stringify(row));
-
-    if (!merged.has(key)) {
-      merged.set(key, {
-        row: clone,
-        weight,
-        valueSum: Number.isFinite(value) ? value * weight : 0,
-        zSum: Number.isFinite(z) ? z * weight : 0,
-        hasValue: Number.isFinite(value),
-        hasZ: Number.isFinite(z),
-      });
-      return;
-    }
-
-    const current = merged.get(key);
-    current.weight += weight;
-    if (Number.isFinite(value)) {
-      current.valueSum += value * weight;
-      current.hasValue = true;
-    }
-    if (Number.isFinite(z)) {
-      current.zSum += z * weight;
-      current.hasZ = true;
-    }
-
-    current.row.n_epochs = current.weight;
-    if (current.hasValue) current.row.value = current.valueSum / current.weight;
-    if (current.hasZ) current.row.zscore = current.zSum / current.weight;
-
-    const existingSource = String(current.row.norm_source || "");
-    const nextSource = String(row?.norm_source || "");
-    if (existingSource && nextSource && existingSource !== nextSource) {
-      current.row.norm_source = "combined";
-    } else if (!existingSource && nextSource) {
-      current.row.norm_source = nextSource;
-    }
-
-    const keyList = [...(Array.isArray(current.row.norm_keys) ? current.row.norm_keys : []), ...(Array.isArray(row?.norm_keys) ? row.norm_keys : [])];
-    if (keyList.length) current.row.norm_keys = [...new Set(keyList)];
-  };
-
-  for (const row of existing || []) ingest(row);
-  for (const row of incoming || []) ingest(row);
-
-  return [...merged.values()].map((entry) => entry.row);
-}
-
-function rowLocation(row) {
-  if (!row || typeof row !== "object") return "";
-  if (row.location) return canonicalLocation(row.location);
-
-  const keys = Array.isArray(row.norm_keys) ? row.norm_keys : [];
-  for (const keyRaw of keys) {
-    const key = String(keyRaw || "");
-
-    let match = key.match(/^[A-Z_]+:([^:]+):[a-z]+$/i);
-    if (match) return canonicalLocation(match[1]);
-
-    match = key.match(/^(?:RATIO_THETA_BETA|PAF|TOTAMP):([^:]+)$/i);
-    if (match) return canonicalLocation(match[1]);
-
-    match = key.match(/^TOTCOH:([^:]+):[a-z]+$/i);
-    if (match) return canonicalLocation(match[1]);
-  }
-
-  return "";
-}
-
-function rowPair(row) {
-  if (!row || typeof row !== "object") return null;
-
-  if (Array.isArray(row.pair) && row.pair.length === 2) {
-    const left = canonicalLocation(row.pair[0]);
-    const right = canonicalLocation(row.pair[1]);
-    if (left && right && left !== right) return [left, right];
-  }
-
-  const keys = Array.isArray(row.norm_keys) ? row.norm_keys : [];
-  for (const keyRaw of keys) {
-    const key = String(keyRaw || "");
-    const match = key.match(/^[A-Z_]+:([A-Za-z0-9]+)-([A-Za-z0-9]+):[a-z]+$/);
-    if (match) {
-      const left = canonicalLocation(match[1]);
-      const right = canonicalLocation(match[2]);
-      if (left && right && left !== right) return [left, right];
-    }
-  }
-
-  return null;
-}
-
-function projectHeadPoint(loc, cx, cy, radius) {
-  const coords = HEAD_COORDS_1020[canonicalLocation(loc)];
-  if (!coords) return null;
-  const x = cx + coords[0] * radius;
-  const y = cy - coords[1] * radius;
-  return [x, y];
-}
-
-function zColor(z) {
-  if (!Number.isFinite(z)) return "rgba(170,170,170,0.7)";
-  const t = Math.min(1, Math.abs(z) / 3.0);
-  if (z >= 0) {
-    const r = Math.round(160 + 95 * t);
-    const g = Math.round(200 - 150 * t);
-    const b = Math.round(200 - 170 * t);
-    return `rgba(${r},${g},${b},0.9)`;
-  }
-  const r = Math.round(200 - 170 * t);
-  const g = Math.round(210 - 140 * t);
-  const b = Math.round(170 + 85 * t);
-  return `rgba(${r},${g},${b},0.9)`;
 }
 
 function resizeCanvasToDisplaySize(canvas) {
@@ -1433,204 +815,12 @@ function resizeCanvasToDisplaySize(canvas) {
   return { width, height, dpr };
 }
 
-function drawHeadBase(ctx, width, height) {
-  const cx = width / 2;
-  const cy = height / 2;
-  const radius = Math.min(width, height) * 0.36;
-
-  ctx.clearRect(0, 0, width, height);
-
-  ctx.fillStyle = "rgba(248, 250, 252, 0.95)";
-  ctx.strokeStyle = "rgba(20, 33, 42, 0.35)";
-  ctx.lineWidth = Math.max(1, Math.round(width * 0.003));
-  ctx.beginPath();
-  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(cx - radius * 0.08, cy - radius * 1.02);
-  ctx.lineTo(cx, cy - radius * 1.18);
-  ctx.lineTo(cx + radius * 0.08, cy - radius * 1.02);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.arc(cx - radius * 1.02, cy, radius * 0.08, -Math.PI / 3, Math.PI / 3);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.arc(cx + radius * 1.02, cy, radius * 0.08, (2 * Math.PI) / 3, (4 * Math.PI) / 3);
-  ctx.stroke();
-
-  return { cx, cy, radius };
-}
-
-function drawZMap() {
-  const canvas = refs.vizHeadCanvas;
-  if (!canvas) return { points: 0, label: "" };
-  const size = resizeCanvasToDisplaySize(canvas);
-  if (!size) return { points: 0, label: "" };
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return { points: 0, label: "" };
-
-  const { cx, cy, radius } = drawHeadBase(ctx, size.width, size.height);
-  const metricType = String(refs.vizMetricType?.value || "absolute_power");
-  const band = String(refs.vizSiteBand?.value || "alpha");
-
-  const pointsByLoc = new Map();
-  for (const row of resultState.coherenceRows) {
-    if (String(row?.metric_type || "") !== metricType) continue;
-    if (metricNeedsBand(metricType) && String(row?.band || "") !== band) continue;
-
-    const loc = rowLocation(row);
-    if (!loc || loc === "GLOBAL") continue;
-
-    const z = Number(row?.zscore);
-    if (!Number.isFinite(z)) continue;
-    pointsByLoc.set(loc, z);
-  }
-
-  const points = [...pointsByLoc.entries()].map(([loc, z]) => ({ loc, z }));
-  if (!points.length) {
-    ctx.fillStyle = "rgba(20, 33, 42, 0.6)";
-    ctx.font = `${Math.max(14, Math.floor(size.width * 0.03))}px Bahnschrift, sans-serif`;
-    ctx.fillText("No z-score points for selected metric/band.", size.width * 0.08, size.height * 0.5);
-    return { points: 0, label: `${metricType}${metricNeedsBand(metricType) ? ` ${band}` : ""}` };
-  }
-
-  ctx.font = `${Math.max(11, Math.floor(size.width * 0.02))}px Bahnschrift, sans-serif`;
-  for (const point of points) {
-    const xy = projectHeadPoint(point.loc, cx, cy, radius);
-    if (!xy) continue;
-
-    const [x, y] = xy;
-    ctx.fillStyle = zColor(point.z);
-    ctx.beginPath();
-    ctx.arc(x, y, Math.max(6, Math.floor(size.width * 0.015)), 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = "rgba(20, 33, 42, 0.35)";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    ctx.fillStyle = "rgba(20, 33, 42, 0.85)";
-    ctx.fillText(displayLocation(point.loc), x + 7, y - 7);
-  }
-
-  ctx.fillStyle = "rgba(20, 33, 42, 0.75)";
-  ctx.font = `${Math.max(12, Math.floor(size.width * 0.02))}px Bahnschrift, sans-serif`;
-  ctx.fillText("z: -3 (blue) to +3 (red)", 8, size.height - 8);
-
-  return { points: points.length, label: `${metricType}${metricNeedsBand(metricType) ? ` ${band}` : ""}` };
-}
-
-function drawPairMap() {
-  const canvas = refs.vizPairCanvas;
-  if (!canvas) return { lines: 0, hyper: 0, hypo: 0, label: "" };
-  const size = resizeCanvasToDisplaySize(canvas);
-  if (!size) return { lines: 0, hyper: 0, hypo: 0, label: "" };
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return { lines: 0, hyper: 0, hypo: 0, label: "" };
-
-  const { cx, cy, radius } = drawHeadBase(ctx, size.width, size.height);
-  const metricType = String(refs.vizPairMetric?.value || "coherence");
-  const band = String(refs.vizPairBand?.value || "alpha");
-  const threshold = Math.max(0, Number(refs.vizPairThreshold?.value || 2.0));
-  const showAll = Boolean(refs.vizPairShowAll?.checked);
-
-  const lines = [];
-  for (const row of resultState.coherenceRows) {
-    if (String(row?.metric_type || "") !== metricType) continue;
-    if (String(row?.band || "") !== band) continue;
-
-    const z = Number(row?.zscore);
-    if (!Number.isFinite(z)) continue;
-    if (!showAll && Math.abs(z) < threshold) continue;
-
-    const pair = rowPair(row);
-    if (!pair) continue;
-
-    const p1 = projectHeadPoint(pair[0], cx, cy, radius);
-    const p2 = projectHeadPoint(pair[1], cx, cy, radius);
-    if (!p1 || !p2) continue;
-
-    lines.push({ pair, z, p1, p2 });
-  }
-
-  if (!lines.length) {
-    ctx.fillStyle = "rgba(20, 33, 42, 0.6)";
-    ctx.font = `${Math.max(14, Math.floor(size.width * 0.03))}px Bahnschrift, sans-serif`;
-    ctx.fillText("No pair lines for selected metric/band.", size.width * 0.08, size.height * 0.5);
-    return { lines: 0, hyper: 0, hypo: 0, label: `${metricType} ${band}` };
-  }
-
-  let hyper = 0;
-  let hypo = 0;
-  const locSet = new Set();
-
-  for (const line of lines) {
-    locSet.add(line.pair[0]);
-    locSet.add(line.pair[1]);
-    if (line.z >= threshold) hyper += 1;
-    if (line.z <= -threshold) hypo += 1;
-
-    ctx.strokeStyle = zColor(line.z);
-    ctx.lineWidth = 1 + Math.min(5, Math.abs(line.z));
-    ctx.beginPath();
-    ctx.moveTo(line.p1[0], line.p1[1]);
-    ctx.lineTo(line.p2[0], line.p2[1]);
-    ctx.stroke();
-  }
-
-  ctx.fillStyle = "rgba(20, 33, 42, 0.85)";
-  ctx.font = `${Math.max(11, Math.floor(size.width * 0.02))}px Bahnschrift, sans-serif`;
-
-  for (const loc of locSet) {
-    const xy = projectHeadPoint(loc, cx, cy, radius);
-    if (!xy) continue;
-    ctx.beginPath();
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
-    ctx.arc(xy[0], xy[1], Math.max(4, Math.floor(size.width * 0.01)), 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(20, 33, 42, 0.6)";
-    ctx.stroke();
-    ctx.fillStyle = "rgba(20, 33, 42, 0.85)";
-    ctx.fillText(displayLocation(loc), xy[0] + 5, xy[1] - 5);
-  }
-
-  ctx.fillStyle = "rgba(20, 33, 42, 0.75)";
-  ctx.fillText(`Threshold: ${showAll ? "all" : `|z| >= ${threshold.toFixed(1)}`}`, 8, size.height - 8);
-
-  return { lines: lines.length, hyper, hypo, label: `${metricType} ${band}` };
-}
-
-function redrawVisualizations() {
-  const map = drawZMap();
-  const pair = drawPairMap();
-
-  if (refs.vizSummary) {
-    const parts = [];
-    if (resultState.coherenceRows.length) {
-      parts.push(`Z-map: ${map.points} sites (${map.label})`);
-      parts.push(`Pair map: ${pair.lines} lines (${pair.label})`);
-      parts.push(`Hyper lines: ${pair.hyper}`);
-      parts.push(`Hypo lines: ${pair.hypo}`);
-    } else {
-      parts.push("Run or open a coherence result to render head maps.");
-    }
-    refs.vizSummary.textContent = parts.join(" | ");
-  }
-}
-
-function renderResults(payload, sourceLabel = "live session", options = {}) {
+function renderResults(payload, sourceLabel = "live session") {
   const root = payload?.result || payload;
   const container = findMetricsContainer(root);
   if (!container) {
     throw new Error("Could not find a metrics[] array in the selected JSON.");
   }
-  const merge = Boolean(options?.merge);
 
   const metrics = Array.isArray(container.metrics) ? container.metrics.map(normalizeMetricRecord) : [];
   const summary = summarizeMetrics(metrics);
@@ -1644,26 +834,12 @@ function renderResults(payload, sourceLabel = "live session", options = {}) {
     if (!summary.potential_symptom_questions.includes(text)) summary.potential_symptom_questions.push(text);
   }
 
-  const incomingRows = extractCoherenceRows(root);
-
-  if (merge) {
-    resultState.metrics = mergeMetrics(resultState.metrics, metrics);
-    resultState.summary = summarizeMetrics(resultState.metrics);
-    resultState.sourceLabel = `combined coherence runs (${Math.max(1, resultState.combinedRuns + 1)})`;
-    resultState.rawResult = root;
-    resultState.coherenceRows = mergeCoherenceRows(resultState.coherenceRows, incomingRows);
-    resultState.combinedRuns = Math.max(1, resultState.combinedRuns + 1);
-  } else {
-    resultState.metrics = metrics;
-    resultState.summary = summary;
-    resultState.sourceLabel = sourceLabel || "live session";
-    resultState.rawResult = root;
-    resultState.coherenceRows = incomingRows;
-    resultState.combinedRuns = 1;
-  }
+  resultState.metrics = metrics;
+  resultState.summary = summary;
+  resultState.sourceLabel = sourceLabel || "live session";
+  resultState.rawResult = root;
 
   redrawResults();
-  redrawVisualizations();
 }
 
 function setRunningState(isRunning) {
@@ -1788,6 +964,45 @@ async function checkPython() {
   }
 }
 
+function parseTags(value) {
+  return String(value || "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
+function selectedProfilePayload() {
+  const profile = profileState.profiles.find((item) => item.id === refs.profileSelect?.value) || profileState.profiles[0];
+  return profile ? { id: profile.id, name: profile.name } : { id: "default", name: "Default Profile" };
+}
+
+function sessionMetadataConfig() {
+  return {
+    profile: selectedProfilePayload(),
+    tags: parseTags(refs.sessionTags?.value),
+    notes: String(refs.sessionNotes?.value || "").trim(),
+  };
+}
+
+function renderProfiles() {
+  if (!refs.profileSelect) return;
+  refs.profileSelect.innerHTML = "";
+  for (const profile of profileState.profiles) {
+    const option = document.createElement("option");
+    option.value = profile.id;
+    option.textContent = profile.name;
+    refs.profileSelect.appendChild(option);
+  }
+  refs.profileSelect.value = profileState.activeProfileId;
+}
+
+async function loadProfiles() {
+  const payload = await window.clinicalQ.listProfiles();
+  profileState.profiles = payload.profiles || [];
+  profileState.activeProfileId = payload.activeProfileId || "default";
+  renderProfiles();
+}
+
 function summarizeEvent(event) {
   switch (event.event) {
     case "session_start":
@@ -1817,12 +1032,8 @@ function summarizeEvent(event) {
       return `Analysis ready: ${event.metrics} metrics (${event.out_of_range} out-of-range).`;
     case "session_complete":
       return `Session complete. Result saved: ${event.output_path}`;
-    case "coherence_session_complete":
-      return `Coherence session complete. Result saved: ${event.output_path}`;
     case "session_stopped":
       return "Session stopped.";
-    case "coherence_session_stopped":
-      return "Coherence session stopped.";
     case "error":
       return `Error: ${event.message}`;
     case "log":
@@ -1835,8 +1046,14 @@ function summarizeEvent(event) {
 function buildClinicalQConfig() {
   const isSequential = refs.mode?.value === "sequential";
   const manualAdvance = isSequential && refs.manualReposition?.checked;
+  const selectedLocations = selectedClinicalqLocations();
+  if (!selectedLocations.length) {
+    throw new Error("Select at least one ClinicalQ position.");
+  }
+  const selectedSoundProbes = selectedClinicalqSoundProbes();
 
   return {
+    ...sessionMetadataConfig(),
     mode: refs.mode?.value || "sequential",
     epoch_seconds: Number(refs.epochSeconds?.value || 15),
     reposition_seconds: Number(refs.repositionSeconds?.value || 20),
@@ -1853,179 +1070,38 @@ function buildClinicalQConfig() {
       available_channels: [1, 2, 3, 4, 5, 6, 7, 8],
       seed: 42,
     },
-    channels: {
-      Cz: Number(refs.chCz?.value || 1),
-      O1: Number(refs.chO1?.value || 2),
-      Fz: Number(refs.chFz?.value || 3),
-      F3: Number(refs.chF3?.value || 4),
-      F4: Number(refs.chF4?.value || 5),
-    },
-    sequential_order: ["O1", "Cz", "Fz", "F3", "F4"],
-  };
-}
-
-function coherencePairsForReading(locations) {
-  const localPairs = allPairsFromLocations(locations);
-  if (String(refs.qeegPairCoverage?.value || "all_within_reading") !== "target_pairs_only") {
-    return localPairs;
-  }
-
-  const targetSet = targetPairKeySet();
-  return localPairs.filter((pair) => targetSet.has(pairKey(pair[0], pair[1])));
-}
-
-function buildCoherenceConfig() {
-  const profile = selectedHardwareProfile();
-  const maxCh = profile.maxChannels;
-  const recordingSource = selectedRecordingSource();
-
-  const active = qeegState.readings[qeegState.activeReading];
-  if (!active || !active.locations.length) {
-    throw new Error("Active QEEG reading has no locations. Configure at least 2 locations.");
-  }
-
-  fillMissingChannelAssignments(qeegState.activeReading);
-
-  const locations = active.locations.slice(0, electrodesPerReading());
-  if (locations.length < 2) {
-    throw new Error("At least 2 locations are required for coherence.");
-  }
-
-  const channels = {};
-  for (const loc of locations) {
-    const raw = active.channelMap?.[loc];
-    const normalized = normalizeChannelInput(raw);
-    if (recordingSource === "existing_recordings") {
-      if (normalized === null || (typeof normalized === "number" && normalized <= 0)) {
-        throw new Error(`Invalid recording channel mapping for ${loc}. Use a label or positive column number.`);
-      }
-      channels[loc] = normalized;
-    } else {
-      const ch = Number(normalized);
-      if (!Number.isInteger(ch) || ch < 1 || ch > maxCh) {
-        throw new Error(`Invalid channel mapping for ${loc}. Use 1-${maxCh}.`);
-      }
-      channels[loc] = ch;
-    }
-  }
-
-  const pairs = coherencePairsForReading(locations);
-  if (!pairs.length) {
-    throw new Error("No coherence pairs selected for the active reading.");
-  }
-
-  const zscoreMode = selectedZscoreMode();
-  const ageValue = Number(refs.subjectAge?.value);
-
-  if (recordingSource === "existing_recordings") {
-    if (!offlineRecordingState.filePaths.length) {
-      throw new Error("Choose one or more EEG recording files before starting offline coherence analysis.");
-    }
-    return {
-      mode: "simultaneous",
-      epoch_seconds: Number(refs.epochSeconds?.value || 30),
-      reposition_seconds: 0,
-      reposition_mode: "timer",
-      norms_dataset: String(refs.coherenceNorms?.value || "ds003775"),
-      zscore_mode: zscoreMode,
-      subject_age: zscoreMode === "age" && Number.isFinite(ageValue) ? ageValue : null,
-      sampling_rate: 250,
-      channels,
-      locations,
-      pairs,
-      source: {
-        kind: "existing_recordings",
-        sync_mode: selectedRecordingSyncMode(),
-        recordings: offlineRecordingState.filePaths.map((filePath) => ({ path: filePath })),
-        exclude_ranges: parseTimeRanges(refs.artifactRanges?.value || ""),
-      },
-    };
-  }
-
-  return {
-    mode: "simultaneous",
-    epoch_seconds: Number(refs.epochSeconds?.value || 30),
-    reposition_seconds: 0,
-    reposition_mode: "timer",
-    norms_dataset: String(refs.coherenceNorms?.value || "ds003775"),
-    zscore_mode: zscoreMode,
-    subject_age: zscoreMode === "age" && Number.isFinite(ageValue) ? ageValue : null,
-    sampling_rate: 250,
-    fast_mode: Boolean(refs.fastMode?.checked),
-    board: {
-      board_id: profile.boardId,
-      serial_port: refs.serialPort?.value || "COM3",
-      use_synthetic: Boolean(refs.useSynthetic?.checked),
-      available_channels: Array.from({ length: maxCh }, (_x, i) => i + 1),
-      seed: 42,
-    },
-    channels,
-    pairs,
+    channels: clinicalqChannelMapForLocations(selectedLocations),
+    selected_locations: selectedLocations,
+    sound_probes: selectedSoundProbes,
+    sequential_order: CLINICALQ_LOCATION_ORDER.filter((loc) => selectedLocations.includes(loc)),
   };
 }
 
 function buildConfig() {
-  if (selectedAnalysisType() === "coherence") return buildCoherenceConfig();
   return buildClinicalQConfig();
 }
 
 function syncSessionUi() {
-  const analysisType = selectedAnalysisType();
-  const isCoherence = analysisType === "coherence";
-  const isOfflineCoherence = offlineCoherenceModeEnabled();
-  const zscoreMode = selectedZscoreMode();
-
-  if (isCoherence && refs.mode) refs.mode.value = "simultaneous";
-
-  if (refs.mode) refs.mode.disabled = isCoherence;
   const isSequential = refs.mode?.value === "sequential";
 
-  if (refs.manualReposition) refs.manualReposition.disabled = isCoherence || !isSequential;
+  if (refs.mode) refs.mode.disabled = running;
+  if (refs.manualReposition) refs.manualReposition.disabled = running || !isSequential;
   const manual = isSequential && refs.manualReposition?.checked;
-  if (refs.repositionSeconds) refs.repositionSeconds.disabled = isCoherence || manual;
-  if (refs.includeFrontalBaseline) refs.includeFrontalBaseline.disabled = isCoherence;
-  if (refs.serialPort) refs.serialPort.disabled = isOfflineCoherence;
-  if (refs.useSynthetic) refs.useSynthetic.disabled = isOfflineCoherence;
-  if (refs.fastMode) refs.fastMode.disabled = isOfflineCoherence;
-  if (refs.soundCues) refs.soundCues.disabled = isOfflineCoherence;
-  if (refs.cueLead) refs.cueLead.disabled = isOfflineCoherence;
+  if (refs.repositionSeconds) refs.repositionSeconds.disabled = running || manual;
+  if (refs.includeFrontalBaseline) refs.includeFrontalBaseline.disabled = running;
+  if (refs.serialPort) refs.serialPort.disabled = running;
+  if (refs.useSynthetic) refs.useSynthetic.disabled = running;
+  if (refs.fastMode) refs.fastMode.disabled = running;
+  if (refs.soundCues) refs.soundCues.disabled = running;
+  if (refs.cueLead) refs.cueLead.disabled = running;
 
-  if (refs.coherenceNorms) refs.coherenceNorms.disabled = !isCoherence;
-  if (refs.zscoreMode) refs.zscoreMode.disabled = !isCoherence;
-  if (refs.subjectAge) refs.subjectAge.disabled = !isCoherence || zscoreMode !== "age";
-  if (refs.pickRecordingsBtn) refs.pickRecordingsBtn.disabled = !isOfflineCoherence || running;
-  if (refs.recordingSyncMode) refs.recordingSyncMode.disabled = !isOfflineCoherence || running;
-  if (refs.artifactRanges) refs.artifactRanges.disabled = !isOfflineCoherence || running;
-
-  if (refs.clinicalqChannelMapSection) {
-    refs.clinicalqChannelMapSection.style.display = isCoherence ? "none" : "block";
-  }
-  if (refs.qeegSettings) {
-    refs.qeegSettings.style.display = isCoherence ? "block" : "none";
-  }
+  syncClinicalqLocationControls();
 
   if (refs.startBtn) {
-    if (isOfflineCoherence) {
-      refs.startBtn.textContent = `Analyze Imported Reading ${qeegState.activeReading + 1}`;
-    } else if (isCoherence) {
-      refs.startBtn.textContent = `Start Coherence Reading ${qeegState.activeReading + 1}`;
-    } else {
-      refs.startBtn.textContent = "Start ClinicalQ Session";
-    }
+    refs.startBtn.textContent = "Start ClinicalQ Session";
   }
 
-  if (isCoherence) {
-    const active = qeegState.readings[qeegState.activeReading];
-    seedBandLocations(active?.locations || []);
-  } else {
-    seedBandLocations(["CZ", "O1", "FZ", "F3", "F4"]);
-  }
-
-  if (refs.recordingFiles) {
-    refs.recordingFiles.style.display = isOfflineCoherence ? "block" : "none";
-  }
-
-  renderRecordingFiles();
+  seedBandLocations(selectedClinicalqLocations());
 }
 
 window.clinicalQ.onSessionEvent((event) => {
@@ -2050,6 +1126,7 @@ window.clinicalQ.onSessionEvent((event) => {
       playCue(event.label);
       lastEpochLabel = event.label;
     }
+    playProbeAudio(event.label);
     setCountdown(`${event.sequence} E${event.index} ${event.label}: ${event.seconds}s`);
 
     bandState.sequence = event.sequence;
@@ -2099,6 +1176,10 @@ window.clinicalQ.onSessionEvent((event) => {
     drawBandpower();
   }
 
+  if (event.event === "epoch_complete") {
+    stopProbeAudio();
+  }
+
   if (event.event === "reposition_start" && event.mode === "manual") {
     setReadyState(event.next_location);
     setCueBanner(`MOVE ELECTRODE: ${displayLocationLabel(event.next_location)} | Click Ready when stable.`);
@@ -2118,13 +1199,12 @@ window.clinicalQ.onSessionEvent((event) => {
 
   if (
     event.event === "session_complete" ||
-    event.event === "coherence_session_complete" ||
     event.event === "error" ||
-    event.event === "session_stopped" ||
-    event.event === "coherence_session_stopped"
+    event.event === "session_stopped"
   ) {
     setReadyState(null);
     setCountdown("");
+    stopProbeAudio();
   }
 
   const text = summarizeEvent(event);
@@ -2137,39 +1217,20 @@ window.clinicalQ.onSessionEvent((event) => {
 if (refs.startBtn) {
   refs.startBtn.addEventListener("click", async () => {
     if (running) return;
-    const analysisType = selectedAnalysisType();
-    const combineCoherenceRuns = analysisType === "coherence" && Boolean(refs.qeegCombineRuns?.checked);
-    const mergeWithExisting = combineCoherenceRuns && resultState.coherenceRows.length > 0;
 
     setRunningState(true);
     setReadyState(null);
     setCueBanner("");
     setCountdown("");
-    if (!mergeWithExisting) {
-      clearResults();
-    } else if (refs.summary) {
-      refs.summary.textContent = "Running next coherence reading; results will be merged.";
-    }
+    clearResults();
 
     try {
       await warmAudio();
       const config = buildConfig();
+      const payload = await window.clinicalQ.startSession(config);
+      const sourceNote = payload.outputPath || payload.output_path || "live session";
 
-      if (analysisType === "coherence") {
-        seedBandLocations(Object.keys(config.channels || {}));
-      }
-
-      const payload =
-        analysisType === "coherence"
-          ? await window.clinicalQ.startCoherenceSession(config)
-          : await window.clinicalQ.startSession(config);
-
-      const sourceNote =
-        analysisType === "coherence"
-          ? `${payload.outputPath || payload.output_path || "live session"} | Reading ${qeegState.activeReading + 1}`
-          : payload.outputPath || payload.output_path || "live session";
-
-      renderResults(payload.result, sourceNote, { merge: mergeWithExisting });
+      renderResults(payload.result, sourceNote);
       if (refs.liveEvent) refs.liveEvent.textContent = `Completed. Output: ${payload.outputPath || payload.output_path || "saved"}`;
     } catch (err) {
       if (refs.liveEvent) refs.liveEvent.textContent = `Failed: ${err.message || err}`;
@@ -2184,9 +1245,7 @@ if (refs.startBtn) {
 if (refs.stopBtn) {
   refs.stopBtn.addEventListener("click", async () => {
     if (!running) return;
-    const analysisType = selectedAnalysisType();
-    const result =
-      analysisType === "coherence" ? await window.clinicalQ.stopCoherenceSession() : await window.clinicalQ.stopSession();
+    const result = await window.clinicalQ.stopSession();
     appendEventRow(result.stopped ? "Stop signal sent." : `Stop ignored: ${result.reason}`);
     setReadyState(null);
     setRunningState(false);
@@ -2222,32 +1281,8 @@ if (refs.openResultBtn) {
   });
 }
 
-if (refs.pickRecordingsBtn) {
-  refs.pickRecordingsBtn.addEventListener("click", async () => {
-    if (!offlineCoherenceModeEnabled() || running) return;
-    try {
-      const picked = await window.clinicalQ.openEegRecordingFiles();
-      if (!picked || picked.canceled) return;
-      offlineRecordingState.filePaths = Array.isArray(picked.filePaths) ? picked.filePaths : [];
-      renderRecordingFiles();
-      appendEventRow(`Selected ${offlineRecordingState.filePaths.length} EEG recording file(s).`);
-      if (refs.liveEvent) refs.liveEvent.textContent = `Imported ${offlineRecordingState.filePaths.length} EEG recording file(s).`;
-    } catch (err) {
-      appendEventRow(`Recording import failed: ${err.message || err}`);
-      if (refs.liveEvent) refs.liveEvent.textContent = `Recording import failed: ${err.message || err}`;
-    }
-  });
-}
-
-if (refs.openPlannerBtn) {
-  refs.openPlannerBtn.addEventListener("click", async () => {
-    try {
-      await window.clinicalQ.openPlannerWindow();
-    } catch (err) {
-      appendEventRow(`Planner launch failed: ${err.message || err}`);
-      if (refs.liveEvent) refs.liveEvent.textContent = `Planner launch failed: ${err.message || err}`;
-    }
-  });
+if (refs.clinicalLauncherBtn) {
+  refs.clinicalLauncherBtn.addEventListener("click", () => window.clinicalQ.openApplet("launcher"));
 }
 
 if (refs.followActive) refs.followActive.addEventListener("change", syncBandpowerUi);
@@ -2259,47 +1294,35 @@ if (refs.bandBeta) refs.bandBeta.addEventListener("change", drawBandpower);
 if (refs.bandHiBeta) refs.bandHiBeta.addEventListener("change", drawBandpower);
 if (refs.resultFilter) refs.resultFilter.addEventListener("change", redrawResults);
 
-if (refs.vizMetricType) {
-  refs.vizMetricType.addEventListener("change", () => {
-    syncVizUi();
-    redrawVisualizations();
-  });
-}
-if (refs.vizSiteBand) refs.vizSiteBand.addEventListener("change", redrawVisualizations);
-if (refs.vizPairBand) refs.vizPairBand.addEventListener("change", redrawVisualizations);
-if (refs.vizPairMetric) refs.vizPairMetric.addEventListener("change", redrawVisualizations);
-if (refs.vizPairThreshold) refs.vizPairThreshold.addEventListener("change", redrawVisualizations);
-if (refs.vizPairShowAll) refs.vizPairShowAll.addEventListener("change", redrawVisualizations);
-
 window.addEventListener("resize", () => {
   drawBandpower();
-  redrawVisualizations();
+  drawClinicalHeadMap(resultState.metrics);
 });
 
 if (refs.mode) refs.mode.addEventListener("change", syncSessionUi);
 if (refs.manualReposition) refs.manualReposition.addEventListener("change", syncSessionUi);
-if (refs.analysisType) refs.analysisType.addEventListener("change", syncSessionUi);
-if (refs.zscoreMode) refs.zscoreMode.addEventListener("change", syncSessionUi);
-if (refs.recordingSource) {
-  refs.recordingSource.addEventListener("change", () => {
-    for (let i = 0; i < qeegState.readings.length; i += 1) fillMissingChannelAssignments(i);
-    renderQeegReadings();
-    renderQeegChannelMap();
-    updateQeegPlanSummary();
-    syncSessionUi();
+for (const refName of Object.values(CLINICALQ_LOCATION_REFS)) {
+  if (refs[refName]) refs[refName].addEventListener("change", syncSessionUi);
+}
+for (const def of Object.values(CLINICALQ_PROBES)) {
+  if (refs[def.checkboxRef]) refs[def.checkboxRef].addEventListener("change", syncSessionUi);
+}
+if (refs.profileSelect) {
+  refs.profileSelect.addEventListener("change", async () => {
+    profileState.activeProfileId = refs.profileSelect.value;
+    await window.clinicalQ.setActiveProfile(refs.profileSelect.value);
   });
 }
-if (refs.recordingSyncMode) refs.recordingSyncMode.addEventListener("change", renderRecordingFiles);
-
-initializeQeegPlanner();
-seedBandLocations(["CZ", "O1", "FZ", "F3", "F4"]);
-renderRecordingFiles();
+seedBandLocations(selectedClinicalqLocations());
 syncSessionUi();
 syncBandpowerUi();
-updateQeegPlanSummary();
-syncVizUi();
-redrawVisualizations();
+drawClinicalHeadMap([]);
+renderClinicalHeadLegend([]);
 
 checkPython().catch((err) => {
   if (refs.pythonStatus) refs.pythonStatus.textContent = `Runtime check failed: ${err.message || err}`;
+});
+
+loadProfiles().catch((err) => {
+  appendEventRow(`Profile load failed: ${err.message || err}`);
 });

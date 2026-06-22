@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NF Tools</title>
+    <link rel="stylesheet" href="nf.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <h1>NF Tools</h1>
+          <div id="runtimeStatus" class="status">Checking Python runtime...</div>
+        </div>
+        <div class="topbar-actions">
+          <nav class="tabs" aria-label="Views">
+            <button class="tab active" data-view="baseline" type="button">Baseline</button>
+            <button class="tab" data-view="train" type="button">Train</button>
+            <button class="tab" data-view="programs" type="button">Programs</button>
+            <button class="tab" data-view="progress" type="button">Progress</button>
+          </nav>
+          <button id="launcherBtn" type="button">Launcher</button>
+        </div>
+      </header>
+
+      <section id="baselineView" class="view active">
+        <div class="toolbar profile-toolbar">
+          <label>
+            Profile
+            <select id="profileSelect"></select>
+          </label>
+          <label>
+            Tags
+            <input id="sessionTags" placeholder="baseline, follow-up, medication change" />
+          </label>
+          <label>
+            Notes
+            <input id="sessionNotes" placeholder="Short session note" />
+          </label>
+        </div>
+        <div class="toolbar">
+          <label>
+            Source
+            <select id="sourceMode">
+              <option value="synthetic">Synthetic</option>
+              <option value="live">Live board</option>
+            </select>
+          </label>
+          <label>
+            Serial
+            <input id="serialPort" value="COM3" />
+          </label>
+          <label>
+            Seconds
+            <input id="baselineSeconds" type="number" min="5" max="300" value="60" />
+          </label>
+          <label>
+            Electrodes (1-8)
+            <input id="electrodeCount" type="number" min="1" max="8" value="4" />
+          </label>
+          <label>
+            State
+            <select id="baselineCondition">
+              <option value="EC">Eyes closed</option>
+              <option value="EO">Eyes open</option>
+            </select>
+          </label>
+          <label>
+            QEEG Norms
+            <select id="baselineNorms">
+              <option value="dvs_608_cleaned">DVS EC cleaned</option>
+              <option value="dvs_608_eo_cleaned">DVS EO cleaned</option>
+              <option value="dvs_608">DVS EC raw</option>
+              <option value="ds003775">ds003775 EC</option>
+              <option value="none">Off</option>
+            </select>
+          </label>
+          <label>
+            Z Mode
+            <select id="baselineZMode">
+              <option value="global">Global</option>
+              <option value="age">Age</option>
+            </select>
+          </label>
+          <label>
+            Age
+            <input id="baselineAge" type="number" min="1" max="120" value="35" />
+          </label>
+          <label>
+            Units
+            <select id="baselineUnits">
+              <option value="uV">uV</option>
+              <option value="V">V</option>
+            </select>
+          </label>
+          <button id="runBaselineBtn" class="primary" type="button">Measure</button>
+        </div>
+
+        <div class="workspace two">
+          <section class="panel">
+            <h2>Electrodes</h2>
+            <div id="electrodeRows" class="electrode-list"></div>
+          </section>
+
+          <section class="panel">
+            <h2>Starting Values</h2>
+            <canvas id="baselineCanvas" class="chart"></canvas>
+            <div class="table-wrap">
+              <table id="baselineTable">
+                <thead>
+                  <tr>
+                    <th>Site</th>
+                    <th>Delta</th>
+                    <th>Theta</th>
+                    <th>Alpha</th>
+                    <th>SMR</th>
+                    <th>Beta</th>
+                    <th>HiBeta</th>
+                    <th>Dom Hz</th>
+                    <th>QEEG AP/RP (|z|<=0.5)</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="trainView" class="view">
+        <div class="toolbar train-toolbar">
+          <label>
+            Protocol
+            <select id="trainProtocol"></select>
+          </label>
+          <button id="browseProtocolBtn" type="button">Browse</button>
+          <label>
+            Preset
+            <select id="trainPresetSelect"></select>
+          </label>
+          <button id="saveTrainPresetBtn" type="button">Save</button>
+          <button id="deleteTrainPresetBtn" type="button">Delete</button>
+          <label>
+            Source
+            <select id="trainSourceMode">
+              <option value="synthetic">Synthetic</option>
+              <option value="live">Live board</option>
+            </select>
+          </label>
+          <label>
+            Serial
+            <input id="trainSerialPort" value="COM3" />
+          </label>
+          <label>
+            Seconds
+            <input id="trainSeconds" type="number" min="10" max="3600" value="120" />
+          </label>
+          <label>
+            Window
+            <input id="trainWindowSeconds" type="number" min="0.5" max="10" step="0.5" value="1" />
+          </label>
+          <label>
+            Reward band
+            <select id="trainRewardBand">
+              <option value="alpha">Alpha</option>
+              <option value="smr">SMR</option>
+              <option value="beta">Beta</option>
+              <option value="theta">Theta</option>
+            </select>
+          </label>
+          <button id="startTrainBtn" class="primary" type="button">Start</button>
+          <button id="stopTrainBtn" type="button" disabled>Stop</button>
+        </div>
+
+        <div class="workspace train-grid">
+          <section class="panel">
+            <h2>Channels</h2>
+            <div id="trainChannelRows" class="electrode-list"></div>
+            <h2>Thresholds</h2>
+            <div class="threshold-grid">
+              <label>Reward min <input id="thresholdRewardMin" type="number" step="0.1" value="4" /></label>
+              <label>SMR min <input id="thresholdSmrMin" type="number" step="0.1" value="4" /></label>
+              <label>Alpha min <input id="thresholdAlphaMin" type="number" step="0.1" value="4" /></label>
+              <label>Theta max <input id="thresholdThetaMax" type="number" step="0.1" value="7" /></label>
+              <label>Slow max <input id="thresholdSlowMax" type="number" step="0.1" value="6" /></label>
+              <label>Fast max <input id="thresholdFastMax" type="number" step="0.1" value="3" /></label>
+              <label>Asym max % <input id="thresholdAsymMax" type="number" step="0.5" value="15" /></label>
+              <label>Alpha max <input id="thresholdAlphaMax" type="number" step="0.1" value="10" /></label>
+              <label>T/B max <input id="thresholdThetaBetaMax" type="number" step="0.1" value="2.2" /></label>
+              <label>Hi/Beta min <input id="thresholdHiBetaMin" type="number" step="0.01" value="0.45" /></label>
+              <label>Hi/Beta max <input id="thresholdHiBetaMax" type="number" step="0.01" value="0.55" /></label>
+            </div>
+          </section>
+
+          <section class="panel feedback-panel">
+            <div class="feedback-head">
+              <h2>Feedback</h2>
+              <div class="feedback-controls">
+                <label>
+                  Reward sound
+                  <select id="rewardSoundMode">
+                    <option value="chime">Chime</option>
+                    <option value="tone">Tone</option>
+                    <option value="iso">Iso pulse</option>
+                    <option value="off">Off</option>
+                  </select>
+                </label>
+                <label>
+                  Alert sound
+                  <select id="alertSoundMode">
+                    <option value="soft">Soft</option>
+                    <option value="alpha">Alpha cue</option>
+                    <option value="off">Off</option>
+                  </select>
+                </label>
+                <label>
+                  Visual
+                  <select id="visualFeedbackMode">
+                    <option value="meter">Meter</option>
+                    <option value="bars">Bars</option>
+                    <option value="field">Field</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+            <canvas id="trainFeedbackCanvas" class="chart feedback-canvas"></canvas>
+            <div class="train-stats">
+              <div><span id="trainRewardPct">0%</span><small>reward</small></div>
+              <div><span id="trainStreak">0</span><small>streak</small></div>
+              <div><span id="trainWindowCount">0</span><small>windows</small></div>
+              <div><span id="trainLastFeedback">0</span><small>feedback</small></div>
+            </div>
+          </section>
+
+          <section class="panel train-metrics-panel">
+            <h2>Live Metrics</h2>
+            <div class="table-wrap train-table-wrap">
+              <table id="trainMetricsTable">
+                <thead>
+                  <tr>
+                    <th>Metric</th>
+                    <th>Value</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <h2>Events</h2>
+            <div id="trainEventLog" class="train-event-log"></div>
+          </section>
+        </div>
+      </section>
+
+      <dialog id="protocolDialog" class="protocol-dialog">
+        <div class="dialog-head">
+          <h2>Choose Protocol</h2>
+          <button id="closeProtocolDialogBtn" type="button">Close</button>
+        </div>
+        <div id="protocolCards" class="protocol-cards"></div>
+      </dialog>
+
+      <section id="programsView" class="view">
+        <div class="toolbar program-toolbar">
+          <label>
+            Program
+            <select id="programSelect"></select>
+          </label>
+          <label>
+            Name
+            <input id="programName" value="ClinicalQ guided training" />
+          </label>
+          <label>
+            Source
+            <select id="programSourceMode">
+              <option value="synthetic">Synthetic</option>
+              <option value="live">Live board</option>
+            </select>
+          </label>
+          <label>
+            Serial
+            <input id="programSerialPort" value="COM3" />
+          </label>
+          <label>
+            ClinicalQ sec
+            <input id="programClinicalQSeconds" type="number" min="5" max="300" value="60" />
+          </label>
+          <label>
+            Train sec
+            <input id="programTrainSeconds" type="number" min="10" max="3600" value="120" />
+          </label>
+          <button id="saveProgramBtn" type="button">Save</button>
+          <button id="deleteProgramBtn" type="button">Delete</button>
+          <button id="runProgramBtn" class="primary" type="button">Run</button>
+          <button id="stopProgramBtn" type="button" disabled>Stop</button>
+        </div>
+
+        <div class="workspace program-grid">
+          <section class="panel program-steps-panel">
+            <div class="panel-head">
+              <h2>Steps</h2>
+              <div class="step-actions">
+                <button id="addClinicalQStepBtn" type="button">ClinicalQ</button>
+                <button id="addProtocolStepBtn" type="button">Protocol</button>
+                <button id="addDecisionStepBtn" type="button">Decision</button>
+              </div>
+            </div>
+            <div id="programStepList" class="program-step-list"></div>
+          </section>
+
+          <section class="panel program-log-panel">
+            <h2>Run Log</h2>
+            <div class="program-summary">
+              <div><span id="programStepCount">0</span><small>steps</small></div>
+              <div><span id="programLastClinicalQ">none</span><small>last ClinicalQ</small></div>
+              <div><span id="programPathCount">0</span><small>decision paths</small></div>
+            </div>
+            <div id="programEventLog" class="train-event-log"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="progressView" class="view">
+        <div class="toolbar progress-toolbar">
+          <button id="chooseProgressFilesBtn" type="button">Files</button>
+          <button id="chooseProgressDirBtn" type="button">Folder</button>
+          <button id="useProfileSessionsBtn" type="button">Profile</button>
+          <label class="check">
+            <input id="includeBrainbayLogs" type="checkbox" checked />
+            <span>BrainBay logs</span>
+          </label>
+          <label class="check">
+            <input id="plotZscores" type="checkbox" />
+            <span>Z-scores</span>
+          </label>
+          <button id="analyzeProgressBtn" class="primary" type="button">Analyze</button>
+          <div id="progressSource" class="status">No files loaded.</div>
+        </div>
+
+        <div class="workspace progress-grid">
+          <section class="panel metric-panel">
+            <h2>Metrics</h2>
+            <input id="metricSearch" class="search" placeholder="Filter metrics" />
+            <div id="metricList" class="metric-list"></div>
+          </section>
+
+          <section class="panel plot-panel">
+            <h2>Progress</h2>
+            <div id="progressSummary" class="progress-summary">
+              <div><span>0</span><small>sessions</small></div>
+              <div><span>0</span><small>metrics</small></div>
+              <div><span>0</span><small>selected</small></div>
+              <div><span>-</span><small>latest</small></div>
+            </div>
+            <canvas id="progressCanvas" class="chart tall"></canvas>
+            <div class="table-wrap">
+              <table id="progressTable">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Metric</th>
+                    <th>Value</th>
+                    <th>Status</th>
+                    <th>Source</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script src="isochronic.js"></script>
+    <script src="nf.js"></script>
+  </body>
+</html>

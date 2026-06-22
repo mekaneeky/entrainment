@@ -11,12 +11,23 @@ import numpy as np
 
 from clinicalq_backend.analysis import analyze_session, session_result_to_dict
 from clinicalq_backend.bands import extract_features
+from clinicalq_backend.filters import eeg_filter_config
 from clinicalq_backend.openbci import create_board
-from clinicalq_backend.protocol import CZ_SEQUENCE, EC_SINGLE_SEQUENCE, O1_SEQUENCE, SEQUENTIAL_ORDER, SIMULTANEOUS_EXTRA
+from clinicalq_backend.protocol import (
+    CZ_SEQUENCE,
+    EC_SINGLE_SEQUENCE,
+    O1_SEQUENCE,
+    SEQUENTIAL_ORDER,
+    SIMULTANEOUS_EXTRA,
+    SOUND_PROBE_LABELS,
+    SOUND_PROBE_SEQUENCE_RULES,
+)
+from clinicalq_backend.raw_recording import RawSessionRecorder
 from clinicalq_backend.types import EpochCapture, EpochSpec, EventCallback
 
 DEFAULT_CHANNELS = {"Cz": 1, "O1": 2, "Fz": 3, "F3": 4, "F4": 5}
 REQUIRED_LOCATIONS = ["O1", "Cz", "Fz", "F3", "F4"]
+SUPPORTED_SOUND_PROBES = {"sub_alpha", "sub_beta", "sleep_support", "sweep"}
 
 
 def _emit(event_cb: EventCallback | None, event: str, **payload: Any) -> None:
@@ -25,24 +36,57 @@ def _emit(event_cb: EventCallback | None, event: str, **payload: Any) -> None:
     event_cb({"event": event, **payload})
 
 
+def _normalize_location(value: Any) -> str:
+    text = str(value or "").strip()
+    lookup = {loc.upper(): loc for loc in REQUIRED_LOCATIONS}
+    return lookup.get(text.upper(), text)
+
+
+def _resolve_selected_locations(config: Dict[str, Any]) -> List[str]:
+    raw = config.get("selected_locations") or REQUIRED_LOCATIONS
+    selected: List[str] = []
+    seen = set()
+    for item in raw:
+        location = _normalize_location(item)
+        if location not in REQUIRED_LOCATIONS or location in seen:
+            continue
+        selected.append(location)
+        seen.add(location)
+
+    if not selected:
+        raise RuntimeError("Select at least one ClinicalQ location.")
+    return selected
+
+
+def _resolve_sound_probes(config: Dict[str, Any]) -> set[str]:
+    raw = config.get("sound_probes") or []
+    if isinstance(raw, dict):
+        raw = [key for key, enabled in raw.items() if enabled]
+    probes = {str(item).strip().lower().replace("-", "_") for item in raw}
+    resolved = {probe for probe in probes if probe in SUPPORTED_SOUND_PROBES}
+    if "sweep" in resolved:
+        resolved.add("sweep_post")
+    return resolved
+
+
 def _resolve_channels(config: Dict[str, Any]) -> Dict[str, int]:
     merged = dict(DEFAULT_CHANNELS)
     merged.update({k: int(v) for k, v in config.get("channels", {}).items()})
     return merged
 
 
-def _validate_required_channels(channels: Dict[str, int]) -> None:
-    missing = [loc for loc in REQUIRED_LOCATIONS if loc not in channels]
+def _validate_required_channels(channels: Dict[str, int], selected_locations: List[str]) -> None:
+    missing = [loc for loc in selected_locations if loc not in channels]
     if missing:
         raise RuntimeError(f"Missing required channel mappings: {', '.join(missing)}")
 
-    invalid = [loc for loc in REQUIRED_LOCATIONS if int(channels.get(loc, 0)) <= 0]
+    invalid = [loc for loc in selected_locations if int(channels.get(loc, 0)) <= 0]
     if invalid:
         raise RuntimeError(f"Invalid channel index (must be >= 1) for: {', '.join(invalid)}")
 
     seen: Dict[int, str] = {}
     duplicates: List[str] = []
-    for loc in REQUIRED_LOCATIONS:
+    for loc in selected_locations:
         ch = int(channels[loc])
         if ch in seen:
             duplicates.append(f"{seen[ch]} and {loc} both map to channel {ch}")
@@ -52,13 +96,47 @@ def _validate_required_channels(channels: Dict[str, int]) -> None:
         raise RuntimeError("Duplicate channel mappings are not allowed: " + "; ".join(duplicates))
 
 
-def _resolve_sequence(location: str) -> List[EpochSpec]:
+def _append_sound_probe_epochs(sequence: List[EpochSpec], location: str, sound_probes: set[str]) -> List[EpochSpec]:
+    next_index = max((int(spec.index) for spec in sequence), default=0) + 1
+    for probe, instruction in SOUND_PROBE_SEQUENCE_RULES.get(location, []):
+        if probe not in sound_probes:
+            continue
+        sequence.append(EpochSpec(next_index, SOUND_PROBE_LABELS[probe], instruction, 15))
+        next_index += 1
+    return sequence
+
+
+def _simultaneous_sound_probe_epochs(selected_locations: List[str], sound_probes: set[str]) -> List[EpochSpec]:
+    rules = [
+        ("sub_alpha", "OMNI", "Cz"),
+        ("sub_beta", "SUB_BETA", "O1"),
+        ("sleep_support", "SLEEP_SUPPORT", "O1"),
+        ("sweep", "SWEEP", "F3"),
+        ("sweep_post", "SWEEP_POST", "F3"),
+    ]
+    instructions = {
+        probe: instruction
+        for rule_list in SOUND_PROBE_SEQUENCE_RULES.values()
+        for probe, instruction in rule_list
+    }
+    out: List[EpochSpec] = []
+    next_index = 12
+    selected = set(selected_locations)
+    for probe, label, required_location in rules:
+        if probe not in sound_probes or required_location not in selected:
+            continue
+        out.append(EpochSpec(next_index, label, instructions[probe], 15))
+        next_index += 1
+    return out
+
+
+def _resolve_sequence(location: str, sound_probes: set[str]) -> List[EpochSpec]:
     if location == "Cz":
-        return copy.deepcopy(CZ_SEQUENCE)
+        return _append_sound_probe_epochs(copy.deepcopy(CZ_SEQUENCE), location, sound_probes)
     if location == "O1":
-        return copy.deepcopy(O1_SEQUENCE)
+        return _append_sound_probe_epochs(copy.deepcopy(O1_SEQUENCE), location, sound_probes)
     if location in {"Fz", "F3", "F4"}:
-        return copy.deepcopy(EC_SINGLE_SEQUENCE)
+        return _append_sound_probe_epochs(copy.deepcopy(EC_SINGLE_SEQUENCE), location, sound_probes)
     raise ValueError(f"Unsupported location: {location}")
 
 
@@ -81,6 +159,8 @@ def _capture_epoch(
     live_bandpower: bool,
     live_window_seconds: float,
     next_spec: EpochSpec | None,
+    raw_recorder: RawSessionRecorder | None,
+    filters: Dict[str, object],
 ) -> EpochCapture:
     next_epoch = None
     if next_spec is not None:
@@ -145,7 +225,7 @@ def _capture_epoch(
                     continue
                 sig = np.concatenate(buffers[ch], axis=0)
                 win = sig[-window_samples:] if sig.size > window_samples else sig
-                live_features[loc] = extract_features(win, board.sampling_rate)
+                live_features[loc] = extract_features(win, board.sampling_rate, filters)
 
             if live_features:
                 _emit(
@@ -179,11 +259,24 @@ def _capture_epoch(
         epoch_data = board.read_epoch(spec.seconds, spec.label, on_tick=_emit_tick)
 
     features: Dict[str, Dict[str, float]] = {}
+    raw_signals: Dict[str, np.ndarray] = {}
     for location in active_locations:
         ch = channels[location]
         if ch not in epoch_data:
             continue
-        features[location] = extract_features(epoch_data[ch], board.sampling_rate)
+        features[location] = extract_features(epoch_data[ch], board.sampling_rate, filters)
+        raw_signals[location] = np.asarray(epoch_data[ch], dtype=float)
+
+    if raw_recorder is not None and raw_signals:
+        raw_recorder.record_epoch(
+            sequence=sequence_name,
+            index=spec.index,
+            label=spec.label,
+            instruction=spec.instruction,
+            seconds=spec.seconds,
+            sampling_rate=board.sampling_rate,
+            signals=raw_signals,
+        )
 
     _emit(
         event_cb,
@@ -251,13 +344,17 @@ def run_session(config: Dict[str, Any], event_cb: EventCallback | None = None) -
     reposition_mode = str(config.get("reposition_mode", "timer")).lower()
     live_bandpower = bool(config.get("live_bandpower", True))
     live_window_seconds = float(config.get("live_window_seconds", 2.0))
+    selected_locations = _resolve_selected_locations(config)
+    sound_probes = _resolve_sound_probes(config)
     channels = _resolve_channels(config)
-    _validate_required_channels(channels)
+    filters = eeg_filter_config(config)
+    _validate_required_channels(channels, selected_locations)
 
     if reposition_mode not in {"timer", "manual"}:
         raise RuntimeError(f"Unsupported reposition_mode: {reposition_mode}. Use 'timer' or 'manual'.")
 
     board = create_board(config)
+    raw_recorder = RawSessionRecorder.from_config(config, analysis="clinicalq")
     _emit(event_cb, "session_start", mode=mode)
 
     captures: List[EpochCapture] = []
@@ -268,10 +365,13 @@ def run_session(config: Dict[str, Any], event_cb: EventCallback | None = None) -
 
         if mode == "simultaneous":
             sequence = _apply_epoch_seconds(CZ_SEQUENCE, epoch_seconds)
-            if bool(config.get("include_frontal_baseline", True)):
+            if bool(config.get("include_frontal_baseline", True)) and any(
+                loc in selected_locations for loc in ("Fz", "F3", "F4")
+            ):
                 sequence.extend(_apply_epoch_seconds(SIMULTANEOUS_EXTRA, epoch_seconds))
+            sequence.extend(_apply_epoch_seconds(_simultaneous_sound_probe_epochs(selected_locations, sound_probes), epoch_seconds))
 
-            active_locations = ["Cz", "O1", "Fz", "F3", "F4"]
+            active_locations = list(selected_locations)
             _emit(event_cb, "sequence_start", sequence="MASTER", locations=active_locations, total_epochs=len(sequence))
 
             for i, spec in enumerate(sequence):
@@ -288,6 +388,8 @@ def run_session(config: Dict[str, Any], event_cb: EventCallback | None = None) -
                         live_bandpower=live_bandpower,
                         live_window_seconds=live_window_seconds,
                         next_spec=next_spec,
+                        raw_recorder=raw_recorder,
+                        filters=filters,
                     )
                 )
 
@@ -295,14 +397,15 @@ def run_session(config: Dict[str, Any], event_cb: EventCallback | None = None) -
 
         elif mode == "sequential":
             order = config.get("sequential_order") or list(SEQUENTIAL_ORDER)
-            order = [str(loc) for loc in order]
-            if len(order) != len(REQUIRED_LOCATIONS) or set(order) != set(REQUIRED_LOCATIONS):
+            order = [_normalize_location(loc) for loc in order]
+            order = [loc for loc in order if loc in selected_locations]
+            if set(order) != set(selected_locations) or len(order) != len(selected_locations):
                 raise RuntimeError(
-                    "Sequential mode must record all required sites exactly once: " + ", ".join(REQUIRED_LOCATIONS)
+                    "Sequential mode must record every selected site exactly once: " + ", ".join(selected_locations)
                 )
 
             for idx, location in enumerate(order):
-                sequence = _apply_epoch_seconds(_resolve_sequence(location), epoch_seconds)
+                sequence = _apply_epoch_seconds(_resolve_sequence(location, sound_probes), epoch_seconds)
 
                 if idx > 0:
                     if reposition_mode == "manual":
@@ -349,6 +452,8 @@ def run_session(config: Dict[str, Any], event_cb: EventCallback | None = None) -
                             live_bandpower=live_bandpower,
                             live_window_seconds=live_window_seconds,
                             next_spec=next_spec,
+                            raw_recorder=raw_recorder,
+                            filters=filters,
                         )
                     )
                 _emit(event_cb, "sequence_complete", sequence=location)
@@ -365,12 +470,24 @@ def run_session(config: Dict[str, Any], event_cb: EventCallback | None = None) -
         "sampling_rate": board.sampling_rate,
         "epoch_seconds": epoch_seconds,
         "channels": channels,
+        "selected_locations": selected_locations,
+        "sound_probes": sorted(probe for probe in sound_probes if probe != "sweep_post"),
+        "filters": filters,
         "epochs": [asdict(cap) for cap in captures],
     }
 
     session = analyze_session(session_data)
     result = session_result_to_dict(session)
     result["epoch_features"] = session_data["epochs"]
+    raw_recording = raw_recorder.close() if raw_recorder is not None else None
+    if raw_recording:
+        result.setdefault("metadata", {})["raw_recording"] = raw_recording
+    if config.get("profile"):
+        result.setdefault("metadata", {})["profile"] = config.get("profile")
+    if config.get("tags"):
+        result.setdefault("metadata", {})["tags"] = config.get("tags")
+    if config.get("notes"):
+        result.setdefault("metadata", {})["notes"] = config.get("notes")
 
     _emit(
         event_cb,

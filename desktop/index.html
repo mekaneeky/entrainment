@@ -11,76 +11,31 @@
     <div class="backdrop"></div>
     <main class="layout">
       <section class="panel hero">
-        <h1>ClinicalQ Studio</h1>
-        <p>Offline OpenBCI Cyton workflow for guided ClinicalQ capture and automated ratio/probe interpretation.</p>
-        <div id="pythonStatus" class="status-chip">Checking Python runtime...</div>
+        <div>
+          <h1>ClinicalQ Studio</h1>
+          <p>Guided capture, ClinicalQ ratios, subliminal probes, and saved profile sessions.</p>
+          <div id="pythonStatus" class="status-chip">Checking Python runtime...</div>
+        </div>
+        <button id="clinicalLauncherBtn" class="secondary" type="button">Launcher</button>
       </section>
 
       <section class="panel controls">
         <h2>Session Setup</h2>
+        <div class="profile-strip">
+          <label>
+            Profile
+            <select id="profileSelect"></select>
+          </label>
+          <label>
+            Tags
+            <input id="sessionTags" placeholder="baseline, follow-up, medication change" />
+          </label>
+          <label class="span-two">
+            Notes
+            <input id="sessionNotes" placeholder="Short session note" />
+          </label>
+        </div>
         <div class="grid two-col">
-          <label>
-            Workflow
-            <select id="analysisType">
-              <option value="clinicalq">ClinicalQ Ratios</option>
-              <option value="coherence">Coherence Z-score</option>
-            </select>
-          </label>
-          <label>
-            Coherence Norms
-            <select id="coherenceNorms">
-              <option value="ds003775">OpenNeuro ds003775</option>
-              <option value="dvs_608">Dortmund Vital Study (608)</option>
-              <option value="dvs_608_cleaned">DVS (608) Cleaned Auto</option>
-              <option value="dvs_608_eo_cleaned">DVS EO (608) Cleaned Auto</option>
-              <option value="dvs_608_eo_cleaned_allpairs">DVS EO (608) Cleaned Auto All-Pairs</option>
-              <option value="ds003775_cleaned">ds003775 Cleaned Auto</option>
-            </select>
-          </label>
-          <label>
-            Z-score Mode
-            <select id="zscoreMode">
-              <option value="global">Global Norms</option>
-              <option value="age">Age-based Norms</option>
-            </select>
-          </label>
-          <label>
-            Subject Age
-            <input id="subjectAge" type="number" min="1" max="120" value="35" />
-          </label>
-          <label>
-            Recording Source
-            <select id="recordingSource">
-              <option value="live">Live board</option>
-              <option value="existing_recordings">Existing EEG recordings</option>
-            </select>
-          </label>
-          <label>
-            QEEG Hardware
-            <select id="qeegHardware">
-              <option value="cyton">Cyton (8 EEG)</option>
-              <option value="cyton_daisy" selected>Cyton + Daisy (16 EEG)</option>
-            </select>
-          </label>
-          <label>
-            Electrodes / Reading
-            <input id="qeegElectrodesPerReading" type="number" min="2" max="16" value="16" />
-          </label>
-          <label>
-            Reading Slots
-            <input id="qeegReadingCount" type="number" min="1" max="6" value="2" />
-          </label>
-          <label>
-            Active Reading
-            <select id="qeegActiveReading"></select>
-          </label>
-          <label>
-            Pair Coverage
-            <select id="qeegPairCoverage">
-              <option value="all_within_reading">All pairs in active reading</option>
-              <option value="target_pairs_only">Target-list pairs in active reading</option>
-            </select>
-          </label>
           <label>
             Mode
             <select id="mode">
@@ -93,23 +48,8 @@
             <input id="serialPort" value="COM3" />
           </label>
           <label>
-            Standalone Planner
-            <button id="openPlannerBtn" class="secondary" type="button">Open QEEG Planner</button>
-          </label>
-          <label>
-            Imported EEG Files
-            <button id="pickRecordingsBtn" class="secondary" type="button">Choose EEG Files</button>
-          </label>
-          <label>
             Epoch Seconds
             <input id="epochSeconds" type="number" min="5" max="60" value="15" />
-          </label>
-          <label>
-            Recording Merge
-            <select id="recordingSyncMode">
-              <option value="parallel">Parallel synced files</option>
-              <option value="independent">Independent files</option>
-            </select>
           </label>
           <label>
             Reposition Seconds
@@ -142,19 +82,6 @@
             Cue lead (sec)
             <input id="cueLead" type="number" min="0" max="10" value="3" />
           </label>
-          <label class="span-two">
-            Artifact Cut Ranges (sec)
-            <textarea
-              id="artifactRanges"
-              rows="4"
-              placeholder="10-14&#10;45.5-52&#10;&#10;Applied to every selected recording."
-            ></textarea>
-          </label>
-        </div>
-        <div id="recordingFiles" class="recording-files">No imported EEG files selected.</div>
-        <div class="help">
-          Existing-recording mode is for qEEG/coherence from saved EEG files. One set of cut ranges is applied across every
-          selected file, which is what you want when multiple recordings came from the same synchronized session.
         </div>
 
         <div id="clinicalqChannelMapSection">
@@ -168,46 +95,45 @@
           </div>
         </div>
 
-        <details id="qeegSettings" class="qeeg-settings">
-          <summary>Coherence Reading Setup</summary>
-          <div class="help">
-            Use the standalone QEEG Planner to work out full 19-site pair coverage. Enter the actual mounted sites for each reading here.
+        <div id="clinicalqLocationSection">
+          <h3>ClinicalQ Positions</h3>
+          <div class="check-grid compact-checks">
+            <label class="toggle"><input id="locO1" type="checkbox" checked /> <span>O1</span></label>
+            <label class="toggle"><input id="locCz" type="checkbox" checked /> <span>Cz</span></label>
+            <label class="toggle"><input id="locFz" type="checkbox" checked /> <span>Fz</span></label>
+            <label class="toggle"><input id="locF3" type="checkbox" checked /> <span>F3</span></label>
+            <label class="toggle"><input id="locF4" type="checkbox" checked /> <span>F4</span></label>
           </div>
-          <div class="grid two-col" hidden>
-            <label>
-              Target Locations (comma-separated 10-20 labels)
-              <textarea id="qeegTargetLocations" rows="3">Fp1,Fp2,F7,F3,Fz,F4,F8,T3,C3,Cz,C4,T4,T5,P3,Pz,P4,T6,O1,O2</textarea>
+        </div>
+
+        <div id="clinicalqSoundProbeSection">
+          <h3>Subliminal Probe Add-ons</h3>
+          <div class="check-grid probe-checks">
+            <label class="toggle">
+              <input id="probeSubAlpha" type="checkbox" checked />
+              <span>SUB/ALPHA at Cz</span>
             </label>
-            <div class="help">
-              For each reading, list the mounted electrodes. The planner computes covered/missing coherence pairs and suggests an additional placement set for missing pairs.
+            <div class="probe-option">
+              <label class="toggle">
+                <input id="probeSubBeta" type="checkbox" checked />
+                <span>SUB/BETA at O1</span>
+              </label>
+              <select id="probeSubBetaLevel" aria-label="SUB/BETA fixed level">
+                <option value="15">-15 dB</option>
+                <option value="17" selected>-17 dB</option>
+                <option value="25">-25 dB</option>
+              </select>
             </div>
+            <label class="toggle">
+              <input id="probeSleepSupport" type="checkbox" checked />
+              <span>Sleep support at O1</span>
+            </label>
+            <label class="toggle">
+              <input id="probeSweep" type="checkbox" checked />
+              <span>SWEEP at F3/F4</span>
+            </label>
           </div>
-          <div class="actions" hidden>
-            <button id="qeegAutoPlanBtn" class="secondary" type="button">Auto-Plan Readings</button>
-            <button id="qeegAnalyzePlanBtn" class="secondary" type="button">Analyze Coverage</button>
-          </div>
-          <label class="toggle">
-            <input id="qeegCombineRuns" type="checkbox" checked />
-            <span>Combine consecutive coherence runs in one map/table</span>
-          </label>
-          <div id="qeegPlanSummary" class="summary" hidden>Configure target locations and readings.</div>
-          <div id="qeegReadings" class="qeeg-readings"></div>
-          <h3>Active Reading Channel Map</h3>
-          <div class="table-wrap qeeg-map-wrap">
-            <table id="qeegChannelTable">
-              <thead>
-                <tr>
-                  <th>Location</th>
-                  <th>Channel / Label</th>
-                </tr>
-              </thead>
-              <tbody id="qeegChannelTableBody"></tbody>
-            </table>
-          </div>
-          <div class="help">
-            Default channel assignments follow a reference map for the selected hardware profile. You can edit any channel value.
-          </div>
-        </details>
+        </div>
 
         <div class="actions">
           <button id="startBtn" class="primary">Start ClinicalQ Session</button>
@@ -271,66 +197,11 @@
           <div id="resultSource" class="result-source">Source: live session</div>
         </div>
         <div id="keyMetrics" class="key-metrics"></div>
+        <div class="headmap-wrap">
+          <canvas id="clinicalHeadCanvas" class="headmap-canvas"></canvas>
+          <div id="clinicalHeadLegend" class="headmap-legend"></div>
+        </div>
         <div id="summary" class="summary">Run a session to generate results.</div>
-        <div class="viz-toolbar">
-          <label>
-            Z-Map Metric
-            <select id="vizMetricType">
-              <option value="absolute_power">Absolute Power (AP)</option>
-              <option value="relative_power">Relative Power (RP)</option>
-              <option value="band_amplitude">Band Amplitude (BP)</option>
-              <option value="total_coherence">Total Coherence</option>
-              <option value="theta_beta_ratio">Theta/Beta Ratio</option>
-              <option value="peak_alpha_frequency">Peak Alpha Frequency</option>
-              <option value="total_amplitude">Total Amplitude</option>
-            </select>
-          </label>
-          <label>
-            Z-Map Band
-            <select id="vizSiteBand">
-              <option value="delta">Delta</option>
-              <option value="theta">Theta</option>
-              <option value="alpha" selected>Alpha</option>
-              <option value="beta">Beta</option>
-            </select>
-          </label>
-          <label>
-            Pair Band
-            <select id="vizPairBand">
-              <option value="delta">Delta</option>
-              <option value="theta">Theta</option>
-              <option value="alpha" selected>Alpha</option>
-              <option value="beta">Beta</option>
-            </select>
-          </label>
-          <label>
-            Line Metric
-            <select id="vizPairMetric">
-              <option value="coherence">Coherence</option>
-              <option value="phase">Phase</option>
-              <option value="asymmetry">Asymmetry</option>
-            </select>
-          </label>
-          <label>
-            |z| threshold
-            <input id="vizPairThreshold" type="number" min="0" max="6" step="0.1" value="2.0" />
-          </label>
-          <label class="toggle">
-            <input id="vizPairShowAll" type="checkbox" />
-            <span>Show all lines</span>
-          </label>
-        </div>
-        <div class="viz-grid">
-          <div class="viz-card">
-            <h3>Head Z-Score Map</h3>
-            <canvas id="vizHeadCanvas" class="bandpower-canvas viz-canvas"></canvas>
-          </div>
-          <div class="viz-card">
-            <h3>Pair Connectivity</h3>
-            <canvas id="vizPairCanvas" class="bandpower-canvas viz-canvas"></canvas>
-          </div>
-        </div>
-        <div id="vizSummary" class="help">Run or open a coherence result to render head maps.</div>
         <div class="table-wrap">
           <table id="resultsTable">
               <thead>
@@ -340,7 +211,7 @@
                   <th>Value</th>
                   <th>F3 (Left)</th>
                   <th>F4 (Right)</th>
-                  <th>Norm</th>
+                  <th>Range</th>
                   <th>Status</th>
                   <th>Potential Symptom Questions</th>
                 </tr>

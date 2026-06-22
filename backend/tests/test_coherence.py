@@ -98,7 +98,8 @@ def test_coherence_age_mode_uses_age_bin_metrics(tmp_path):
     )
 
     alpha_metric = next(m for m in result.metrics if m.location == "F3/F4" and m.metric == "Alpha coherence (EC)")
-    assert alpha_metric.status == "IN_RANGE"
+    assert alpha_metric.status == "OUT_OF_RANGE"
+    assert "|z|<=0.5" in alpha_metric.normal_range
     alpha_row = next(
         row for row in result.derived["coherence"]["rows"] if row.get("metric_type") == "coherence" and row.get("band") == "alpha"
     )

@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Disentrainment</title>
+    <link rel="stylesheet" href="disentrainment.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <h1>Disentrainment</h1>
+          <div id="runtimeStatus" class="status">Checking Python runtime...</div>
+        </div>
+        <div class="top-actions">
+          <label>
+            Profile
+            <select id="profileSelect"></select>
+          </label>
+          <button id="launcherBtn" type="button">Launcher</button>
+        </div>
+      </header>
+
+      <section id="train" class="panel">
+        <h2>Session</h2>
+        <div class="grid session-grid">
+          <label>
+            Source
+            <select id="sourceMode">
+              <option value="synthetic">Synthetic</option>
+              <option value="live">Live board</option>
+            </select>
+          </label>
+          <label>
+            Board
+            <select id="boardId">
+              <option value="cyton">OpenBCI Cyton</option>
+              <option value="cyton_daisy">OpenBCI Cyton Daisy</option>
+            </select>
+          </label>
+          <label>
+            Serial
+            <input id="serialPort" value="COM5" />
+          </label>
+          <label>
+            Seconds
+            <input id="measureSeconds" type="number" min="1" max="300" value="10" />
+          </label>
+          <label>
+            State
+            <select id="condition">
+              <option value="EC">Eyes closed</option>
+              <option value="EO">Eyes open</option>
+            </select>
+          </label>
+          <label>
+            DF Low
+            <input id="dfLow" type="number" min="0.5" max="30" step="0.5" value="1" />
+          </label>
+          <label>
+            DF High
+            <input id="dfHigh" type="number" min="1" max="45" step="0.5" value="30" />
+          </label>
+          <label>
+            Tags
+            <input id="sessionTags" placeholder="df, disentrainment" />
+          </label>
+          <label>
+            Notes
+            <input id="sessionNotes" placeholder="Short session note" />
+          </label>
+        </div>
+      </section>
+
+      <section class="panel montage-panel">
+        <div class="panel-head">
+          <div>
+            <h2>Site Map</h2>
+            <div id="montageStatus" class="status">Selected site: Cz</div>
+          </div>
+          <div class="actions">
+            <button id="montagePreBtn" class="primary" type="button">Record Pre</button>
+            <button id="montageProtocolBtn" type="button">Pre + Selected Protocol + Post</button>
+            <button id="montageOffsetBtn" type="button">Offset Trials</button>
+            <button id="montagePostBtn" type="button">Record Post</button>
+            <button id="endDisentrainmentSessionBtn" type="button">End Session</button>
+          </div>
+        </div>
+        <div class="montage-layout">
+          <div id="headMontage" class="head-montage" aria-label="Clickable 10-20 site map"></div>
+          <div class="montage-side">
+            <div class="legend-grid" aria-label="Site status legend">
+              <span><i class="legend-dot legend-pre"></i>Pre recorded</span>
+              <span><i class="legend-dot legend-entrained"></i>Entrained / offset</span>
+              <span><i class="legend-dot legend-post"></i>Post recorded</span>
+              <span><i class="legend-dot legend-recommended"></i>Next from prior order</span>
+            </div>
+            <label>
+              Prior Runs
+              <select id="priorSessionSelect"></select>
+            </label>
+            <div class="actions">
+              <button id="loadPriorSessionBtn" type="button">Load Run</button>
+            </div>
+            <div id="priorSessionStatus" class="status">No prior run loaded.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Capture Plan</h2>
+            <button id="addSiteBtn" type="button">Add</button>
+          </div>
+          <div class="grid capture-grid">
+            <label>
+              Preset
+              <select id="montagePreset">
+                <option value="cz">Cz only</option>
+                <option value="1020">10-20 full</option>
+                <option value="posterior">Posterior alpha</option>
+                <option value="custom">Custom</option>
+              </select>
+            </label>
+            <label>
+              Sites / Run
+              <input id="captureBatchSize" type="number" min="1" max="1" step="1" value="1" readonly />
+            </label>
+            <label>
+              Site Queue
+              <select id="captureBatch"></select>
+            </label>
+          </div>
+          <div class="actions">
+            <button id="applyPresetBtn" type="button">Apply Preset</button>
+            <button id="prevBatchBtn" type="button">Previous Site</button>
+            <button id="nextBatchBtn" type="button">Next Site</button>
+          </div>
+          <div id="batchStatus" class="status">Selected site 1/1: Cz -> Ch 1</div>
+          <div id="siteRows" class="site-list"></div>
+          <div class="actions">
+            <button id="measureBtn" class="primary" type="button">Measure Current Pre</button>
+            <button id="postMeasureBtn" type="button">Measure Current Post</button>
+            <button id="measureAllPreBtn" type="button">Measure Queue Pre</button>
+            <button id="measureAllPostBtn" type="button">Measure Queue Post</button>
+            <button id="runSequenceBtn" type="button">Current Pre + Selected Protocol + Post</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Isochronic Tone</h2>
+          <div class="grid tone-grid">
+            <label>
+              Carrier Hz
+              <input id="carrierHz" type="number" min="40" max="1200" step="1" value="220" />
+            </label>
+            <label>
+              Pulse Hz
+              <input id="manualPulseHz" type="number" min="0.5" max="45" step="0.1" value="10" />
+            </label>
+            <label>
+              Duty %
+              <input id="dutyPercent" type="number" min="5" max="95" step="1" value="50" />
+            </label>
+            <label>
+              Volume
+              <input id="volume" type="range" min="0" max="0.8" step="0.01" value="0.12" />
+            </label>
+          </div>
+          <div class="actions">
+            <button id="testToneBtn" class="primary" type="button">Play</button>
+            <button id="stopToneBtn" type="button">Stop</button>
+          </div>
+          <div id="toneStatus" class="status">Idle.</div>
+        </section>
+      </section>
+
+      <section class="panel protocol-panel">
+        <div class="panel-head">
+          <div>
+            <h2>Protocol</h2>
+            <div id="protocolSummary" class="status">Measure pre DF to build a protocol preview.</div>
+          </div>
+          <div class="actions">
+            <button id="startProtocolBtn" class="primary" type="button">Start Selected Protocol</button>
+            <button id="stopProtocolBtn" type="button">Stop Protocol</button>
+          </div>
+        </div>
+        <div class="protocol-layout">
+          <section class="protocol-card protocol-run-card">
+            <h3>Run Mode</h3>
+            <div class="grid protocol-run-grid">
+              <label>
+                Site
+                <select id="protocolSite"></select>
+              </label>
+              <label>
+                Mode
+                <select id="protocolMode">
+                  <option value="fixed">Fixed DF from pre</option>
+                  <option value="adaptive">Adaptive live DF</option>
+                </select>
+              </label>
+              <label>
+                Adaptive DF Window Sec
+                <input id="adaptiveDfWindowSeconds" type="number" min="0.5" max="30" step="0.5" value="2" />
+              </label>
+            </div>
+          </section>
+
+          <section class="protocol-card">
+            <h3>Stage 1 Schedule</h3>
+            <div class="grid protocol-stage-grid">
+              <label>
+                Offset Unit
+                <select id="stage1OffsetMode">
+                  <option value="percent">Percent</option>
+                  <option value="hz">Hz</option>
+                </select>
+              </label>
+              <label>
+                Offset Amount
+                <input id="stage1Percent" type="number" min="0" max="45" step="0.1" value="5" />
+              </label>
+              <label>
+                Ahead Min
+                <input id="stage1AheadMin" type="number" min="0.05" max="60" step="0.05" value="4" />
+              </label>
+              <label>
+                Behind Min
+                <input id="stage1BehindMin" type="number" min="0.05" max="60" step="0.05" value="4" />
+              </label>
+              <label>
+                Cycles
+                <input id="stage1Repeats" type="number" min="0" max="12" step="1" value="2" />
+              </label>
+            </div>
+          </section>
+
+          <section class="protocol-card">
+            <h3>Stage 2 Schedule</h3>
+            <div class="grid protocol-stage-grid">
+              <label>
+                Offset Unit
+                <select id="stage2OffsetMode">
+                  <option value="percent">Percent</option>
+                  <option value="hz">Hz</option>
+                </select>
+              </label>
+              <label>
+                Offset Amount
+                <input id="stage2Percent" type="number" min="0" max="45" step="0.1" value="1" />
+              </label>
+              <label>
+                Ahead Min
+                <input id="stage2AheadMin" type="number" min="0.05" max="60" step="0.05" value="1" />
+              </label>
+              <label>
+                Behind Min
+                <input id="stage2BehindMin" type="number" min="0.05" max="60" step="0.05" value="1" />
+              </label>
+              <label>
+                Cycles
+                <input id="stage2Repeats" type="number" min="0" max="24" step="1" value="4" />
+              </label>
+            </div>
+          </section>
+        </div>
+        <progress id="protocolProgress" value="0" max="1"></progress>
+        <div id="protocolStatus" class="status">No pre DF yet.</div>
+      </section>
+
+      <section id="offset" class="panel">
+        <div class="panel-head">
+          <h2>Offset Finder</h2>
+          <div id="offsetStatus" class="status">No offset baseline.</div>
+        </div>
+        <div class="offset-setup">
+          <section class="offset-card">
+            <div>
+              <h3>Measurement Scope</h3>
+              <div class="microcopy">One 10-20 site per run, measured on channel 1.</div>
+            </div>
+            <div class="offset-scope-row">
+              <label>
+                Site
+                <select id="offsetSite"></select>
+              </label>
+              <button id="offsetMeasureBaselineBtn" type="button">Measure Baseline</button>
+            </div>
+          </section>
+
+          <section class="offset-card">
+            <div>
+              <h3>Scoring & Timing</h3>
+              <div class="microcopy">Settings are saved per profile and reused for future offset runs.</div>
+            </div>
+            <div class="grid offset-settings-grid">
+              <label>
+                Baseline Sec
+                <input id="offsetBaselineSeconds" type="number" min="1" max="600" step="1" value="20" />
+              </label>
+              <label>
+                Score
+                <select id="offsetScoreMetric">
+                  <option value="total">1-30 Hz Sum</option>
+                  <option value="delta">Delta</option>
+                  <option value="theta">Theta</option>
+                  <option value="alpha">Alpha</option>
+                  <option value="beta">Beta</option>
+                  <option value="smr">SMR</option>
+                </select>
+              </label>
+              <label>
+                Gradient Win Sec
+                <input id="offsetGradientWindowSeconds" type="number" min="0.5" max="30" step="0.5" value="2" />
+              </label>
+              <label>
+                During Stim
+                <select id="offsetMeasureDuringStim">
+                  <option value="yes">Measure Gradient</option>
+                  <option value="no">Post Only</option>
+                </select>
+              </label>
+            </div>
+          </section>
+        </div>
+
+        <div id="offsetGradientStatus" class="status offset-gradient-status">Current gradient: -</div>
+
+        <section class="offset-plan">
+          <div class="offset-plan-head">
+            <div>
+              <h3>Trial Plan</h3>
+              <div class="microcopy">Test up to 10 offsets; each row stimulates, then measures response.</div>
+            </div>
+            <div class="actions">
+              <button id="offsetAddTrialBtn" type="button">Add Trial</button>
+              <button id="offsetSaveSettingsBtn" type="button">Save Settings</button>
+            </div>
+          </div>
+          <div class="offset-trial-header" aria-hidden="true">
+            <div>Trial</div>
+            <div>Mode</div>
+            <div>Offset</div>
+            <div>Direction</div>
+            <div>Stim Sec</div>
+            <div>Post Sec</div>
+            <div></div>
+          </div>
+          <div id="offsetTrialRows" class="offset-trials"></div>
+        </section>
+
+        <div class="offset-command-bar">
+          <button id="offsetRunBtn" class="primary" type="button">Run Offset Finder</button>
+          <button id="offsetStopBtn" type="button">Stop</button>
+        </div>
+        <progress id="offsetProgress" value="0" max="1"></progress>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Trial</th>
+                <th>Offset</th>
+                <th>Direction</th>
+                <th>Pulse Hz</th>
+                <th>Eq %</th>
+                <th>N</th>
+                <th>Baseline</th>
+                <th>Post</th>
+                <th>Drop %</th>
+                <th>Grad Mean</th>
+                <th>Grad SD</th>
+              </tr>
+            </thead>
+            <tbody id="offsetResultBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="results" class="panel">
+        <div class="panel-head">
+          <h2>Pre/Post Band Results</h2>
+          <div id="bandSummary" class="status">No pre/post measurements.</div>
+        </div>
+        <div id="bandTabs" class="segmented" role="tablist" aria-label="Band views"></div>
+        <div id="bandChart" class="band-chart"></div>
+        <div class="band-layout">
+          <section class="band-block">
+            <h3>Pre Ascending</h3>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Site</th>
+                    <th>Channel</th>
+                    <th id="bandPreValueHead">Mean</th>
+                    <th id="bandPreSpreadHead">SD</th>
+                  </tr>
+                </thead>
+                <tbody id="bandPreBody"></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="band-block">
+            <h3>Post Ascending</h3>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Site</th>
+                    <th>Channel</th>
+                    <th id="bandPostValueHead">Mean</th>
+                    <th id="bandPostSpreadHead">SD</th>
+                  </tr>
+                </thead>
+                <tbody id="bandPostBody"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Session Measurements</h2>
+          <div id="resultSource" class="status">No measurement.</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Phase</th>
+                <th>Site</th>
+                <th>Channel</th>
+                <th>DF Hz</th>
+                <th>1-30 Sum</th>
+                <th>1-30 SD</th>
+                <th>+%</th>
+                <th>-%</th>
+              </tr>
+            </thead>
+            <tbody id="mapTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="isochronic.js"></script>
+    <script src="disentrainment.js"></script>
+  </body>
+</html>

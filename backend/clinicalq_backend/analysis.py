@@ -189,6 +189,19 @@ def _resolve_front_ec(epochs: List[Dict[str, Any]], location: str) -> Dict[str, 
     return _epoch_features(_find_epoch(epochs, location, sequence="MASTER", label="EC"), location)
 
 
+def _resolve_probe_features(epochs: List[Dict[str, Any]], location: str, label: str) -> Dict[str, float]:
+    seqs = _location_sequences(epochs, location)
+    if location in seqs:
+        found = _epoch_features(_find_epoch(epochs, location, sequence=location, label=label), location)
+        if found:
+            return found
+    return _epoch_features(_find_epoch(epochs, location, sequence="MASTER", label=label), location)
+
+
+def _value_status(value: float) -> str:
+    return "MISSING" if math.isnan(value) else "IN_RANGE"
+
+
 def _probe_join(*items: str) -> str:
     cleaned = [x.strip() for x in items if x and x.strip()]
     return " | ".join(cleaned)
@@ -209,7 +222,6 @@ def _analyze_cz(conditions: Dict[str, Dict[str, float]]) -> List[MetricResult]:
     beta_activation = _pct_change(ut.get("beta", 0.0), eo.get("beta", 0.0))
     beta_fatigue = _pct_drop(eo.get("beta", 0.0), ut.get("beta", 0.0))
     tb_challenge_shift = _pct_drop(tb_eo, tb_ut)
-    theta_omni_change = _pct_change(omni.get("theta", 0.0), eo.get("theta", 0.0))
     total_amp_ec = ec.get("total_amp_basic", float("nan"))
     peak_alpha_ec = ec.get("peak_alpha", float("nan"))
     peak_alpha_eo = eo.get("peak_alpha", float("nan"))
@@ -321,24 +333,26 @@ def _analyze_cz(conditions: Dict[str, Dict[str, float]]) -> List[MetricResult]:
         )
     )
 
-    status = _status_for_lt(theta_omni_change, -5.0)
-    probe = ""
-    if status == "OUT_OF_RANGE":
-        if theta_omni_change > 0.0:
-            probe = "Theta increased with Omni/UCS; avoid prescribing that sound for home use."
-        else:
-            probe = "Theta did not reduce enough with Omni/UCS; review sound protocol suitability."
-    out.append(
-        _as_metric(
-            "Cz",
-            "Theta Omni % change",
-            theta_omni_change,
-            "< -5%",
-            status,
-            probe,
-            "(Theta_Omni - Theta_EO) / Theta_EO * 100",
+    if omni:
+        theta_omni_change = _pct_change(omni.get("theta", 0.0), eo.get("theta", 0.0))
+        status = _status_for_lt(theta_omni_change, -5.0)
+        probe = ""
+        if status == "OUT_OF_RANGE":
+            if theta_omni_change > 0.0:
+                probe = "Theta increased with SUB/ALPHA/OMNI; avoid prescribing that sound for home use."
+            else:
+                probe = "Theta did not reduce enough with SUB/ALPHA/OMNI; review sound protocol suitability."
+        out.append(
+            _as_metric(
+                "Cz",
+                "SUB/ALPHA (OMNI) Theta response %",
+                theta_omni_change,
+                "< -5%",
+                status,
+                probe,
+                "(Theta_OMNI - Theta_EO) / Theta_EO * 100",
+            )
         )
-    )
 
     status = _status_for_lt(total_amp_ec, 60.0)
     out.append(
@@ -571,7 +585,8 @@ def _analyze_frontal_pair(f3: Dict[str, float], f4: Dict[str, float]) -> List[Me
     for band in ("theta", "alpha", "beta"):
         f3v = f3.get(band, float("nan"))
         f4v = f4.get(band, float("nan"))
-        mean_v = np.nanmean([f3v, f4v])
+        available = [v for v in (f3v, f4v) if not math.isnan(v)]
+        mean_v = float(np.mean(available)) if available else float("nan")
         signed = float("nan") if mean_v == 0 or math.isnan(mean_v) else (f4v - f3v) / mean_v * 100.0
         abs_diff = float("nan") if math.isnan(signed) else abs(signed)
         status = "MISSING" if math.isnan(abs_diff) else ("IN_RANGE" if abs_diff <= 15.0 else "OUT_OF_RANGE")
@@ -666,6 +681,141 @@ def _analyze_fz(fz: Dict[str, float]) -> List[MetricResult]:
     return out
 
 
+def _o1_probe_metrics(
+    label: str,
+    display_name: str,
+    baseline: Dict[str, float],
+    probe_features: Dict[str, float],
+    *,
+    expected_tb_increase: bool,
+) -> List[MetricResult]:
+    if not probe_features:
+        return []
+
+    base_tb = _safe_div(baseline.get("theta", 0.0), baseline.get("beta", 0.0))
+    probe_tb = _safe_div(probe_features.get("theta", 0.0), probe_features.get("beta", 0.0))
+    tb_change = _pct_change(probe_tb, base_tb)
+    theta_change = _pct_change(probe_features.get("theta", 0.0), baseline.get("theta", 0.0))
+    alpha_change = _pct_change(probe_features.get("alpha", 0.0), baseline.get("alpha", 0.0))
+    peak_alpha_shift = probe_features.get("peak_alpha", float("nan")) - baseline.get("peak_alpha", float("nan"))
+
+    tb_status = _status_for_gt(tb_change, 5.0) if expected_tb_increase else _value_status(tb_change)
+    theta_status = _status_for_gt(theta_change, 5.0) if expected_tb_increase else _value_status(theta_change)
+    tb_probe = ""
+    if tb_status == "OUT_OF_RANGE":
+        tb_probe = f"{display_name} did not increase O1 Theta/Beta by at least 5%; confirm against symptoms and repeat if needed."
+
+    return [
+        _as_metric(
+            "O1",
+            f"{display_name} T/B response %",
+            tb_change,
+            "> 5% increase" if expected_tb_increase else "tracked response",
+            tb_status,
+            tb_probe,
+            f"(T/B_{label} - T/B_EO) / T/B_EO * 100",
+        ),
+        _as_metric(
+            "O1",
+            f"{display_name} Theta response %",
+            theta_change,
+            "> 5% increase" if expected_tb_increase else "tracked response",
+            theta_status,
+            "",
+            f"(Theta_{label} - Theta_EO) / Theta_EO * 100",
+        ),
+        _as_metric(
+            "O1",
+            f"{display_name} Alpha response %",
+            alpha_change,
+            "tracked response",
+            _value_status(alpha_change),
+            "",
+            f"(Alpha_{label} - Alpha_EO) / Alpha_EO * 100",
+        ),
+        _as_metric(
+            "O1",
+            f"{display_name} peak alpha shift",
+            peak_alpha_shift,
+            "tracked response",
+            _value_status(peak_alpha_shift),
+            "",
+            f"PeakAlpha_{label} - PeakAlpha_EO",
+        ),
+    ]
+
+
+def _analyze_o1_sound_probes(epochs: List[Dict[str, Any]], o1_conditions: Dict[str, Dict[str, float]]) -> List[MetricResult]:
+    baseline = o1_conditions.get("EO", {})
+    out: List[MetricResult] = []
+    out.extend(
+        _o1_probe_metrics(
+            "SUB_BETA",
+            "SUB/BETA",
+            baseline,
+            _resolve_probe_features(epochs, "O1", "SUB_BETA"),
+            expected_tb_increase=True,
+        )
+    )
+    out.extend(
+        _o1_probe_metrics(
+            "SLEEP_SUPPORT",
+            "Sleep support",
+            baseline,
+            _resolve_probe_features(epochs, "O1", "SLEEP_SUPPORT"),
+            expected_tb_increase=False,
+        )
+    )
+    return out
+
+
+def _asymmetry_value(left: Dict[str, float], right: Dict[str, float], band: str) -> float:
+    f3v = left.get(band, float("nan"))
+    f4v = right.get(band, float("nan"))
+    values = [v for v in (f3v, f4v) if not math.isnan(v)]
+    if not values:
+        return float("nan")
+    mean_v = float(np.mean(values))
+    if mean_v == 0 or math.isnan(mean_v):
+        return float("nan")
+    return (f4v - f3v) / mean_v * 100.0
+
+
+def _analyze_sweep_response(
+    epochs: List[Dict[str, Any]], baseline_f3: Dict[str, float], baseline_f4: Dict[str, float]
+) -> List[MetricResult]:
+    sweep_f3 = _resolve_probe_features(epochs, "F3", "SWEEP_POST") or _resolve_probe_features(epochs, "F3", "SWEEP")
+    sweep_f4 = _resolve_probe_features(epochs, "F4", "SWEEP_POST") or _resolve_probe_features(epochs, "F4", "SWEEP")
+    if not sweep_f3 or not sweep_f4:
+        return []
+
+    out: List[MetricResult] = []
+    for band in ("theta", "alpha", "beta"):
+        pre_signed = _asymmetry_value(baseline_f3, baseline_f4, band)
+        post_signed = _asymmetry_value(sweep_f3, sweep_f4, band)
+        pre_abs = abs(pre_signed) if not math.isnan(pre_signed) else float("nan")
+        post_abs = abs(post_signed) if not math.isnan(post_signed) else float("nan")
+        reduction_points = pre_abs - post_abs if not math.isnan(pre_abs) and not math.isnan(post_abs) else float("nan")
+        status = _status_for_gt(reduction_points, 0.0)
+        probe = ""
+        if status == "OUT_OF_RANGE":
+            probe = f"SWEEP did not reduce F3/F4 {band} asymmetry after the probe."
+        out.append(
+            _as_metric(
+                "F3/F4",
+                f"SWEEP post {band.title()} asymmetry reduction pp",
+                reduction_points,
+                "> 0 percentage-point reduction",
+                status,
+                probe,
+                f"abs(pre_{band}_asymmetry) - abs(post_sweep_{band}_asymmetry)",
+                left_value=pre_signed,
+                right_value=post_signed,
+            )
+        )
+    return out
+
+
 def analyze_session(session_data: Dict[str, Any]) -> SessionResult:
     epochs = list(session_data.get("epochs", []))
 
@@ -680,6 +830,8 @@ def analyze_session(session_data: Dict[str, Any]) -> SessionResult:
     metrics.extend(_analyze_o1(o1))
     metrics.extend(_analyze_frontal_pair(f3, f4))
     metrics.extend(_analyze_fz(fz))
+    metrics.extend(_analyze_o1_sound_probes(epochs, o1))
+    metrics.extend(_analyze_sweep_response(epochs, f3, f4))
 
     in_range = sum(1 for m in metrics if m.status == "IN_RANGE")
     out_of_range = sum(1 for m in metrics if m.status == "OUT_OF_RANGE")
@@ -718,6 +870,9 @@ def analyze_session(session_data: Dict[str, Any]) -> SessionResult:
         "sampling_rate": session_data.get("sampling_rate"),
         "epoch_seconds": session_data.get("epoch_seconds"),
         "channels": session_data.get("channels"),
+        "selected_locations": session_data.get("selected_locations"),
+        "sound_probes": session_data.get("sound_probes"),
+        "filters": session_data.get("filters"),
     }
 
     return SessionResult(metadata=metadata, metrics=metrics, summary=summary, derived=derived)

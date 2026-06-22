@@ -7,7 +7,11 @@ import sys
 from pathlib import Path
 from typing import Any, Dict
 
+from clinicalq_backend.baseline import run_baseline, run_live_windows
 from clinicalq_backend.coherence_runner import DEFAULT_COHERENCE_CONFIG, run_coherence_session
+from clinicalq_backend.filters import DEFAULT_EEG_FILTERS
+from clinicalq_backend.nf_training import run_nf_training
+from clinicalq_backend.progress import analyze_progress
 from clinicalq_backend.runner import run_session
 
 DEFAULT_CONFIG: Dict[str, Any] = {
@@ -20,6 +24,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "sampling_rate": 250,
     "fast_mode": False,
     "include_frontal_baseline": True,
+    "filters": DEFAULT_EEG_FILTERS,
     "board": {
         "board_id": "cyton",
         "serial_port": "COM3",
@@ -28,7 +33,48 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "seed": 42,
     },
     "channels": {"Cz": 1, "O1": 2, "Fz": 3, "F3": 4, "F4": 5},
+    "selected_locations": ["O1", "Cz", "Fz", "F3", "F4"],
+    "sound_probes": [],
     "sequential_order": ["O1", "Cz", "Fz", "F3", "F4"],
+}
+
+DEFAULT_BASELINE_CONFIG: Dict[str, Any] = {
+    "epoch_seconds": 60,
+    "sampling_rate": 250,
+    "fast_mode": False,
+    "condition": "EC",
+    "dominant_range_hz": [1.0, 40.0],
+    "norms_dataset": "dvs_608_cleaned",
+    "zscore_mode": "global",
+    "subject_age": None,
+    "norm_signal_unit": "uV",
+    "filters": DEFAULT_EEG_FILTERS,
+    "board": {
+        "board_id": "cyton",
+        "serial_port": "COM3",
+        "use_synthetic": True,
+        "available_channels": [1, 2, 3, 4, 5, 6, 7, 8],
+        "seed": 42,
+    },
+    "channels": {"O1": 1},
+}
+
+DEFAULT_NF_TRAINING_CONFIG: Dict[str, Any] = {
+    "protocol_id": "o1_theta_beta_ratio_downtrain",
+    "total_seconds": 120,
+    "window_seconds": 1.0,
+    "sampling_rate": 250,
+    "fast_mode": False,
+    "condition": "NF",
+    "filters": DEFAULT_EEG_FILTERS,
+    "board": {
+        "board_id": "cyton",
+        "serial_port": "COM3",
+        "use_synthetic": True,
+        "available_channels": [1, 2, 3, 4, 5, 6, 7, 8],
+        "seed": 42,
+    },
+    "channels": {},
 }
 
 
@@ -39,7 +85,9 @@ def _emit(event: Dict[str, Any]) -> None:
 def _merge_dict(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
     merged: Dict[str, Any] = copy.deepcopy(base)
     for key, value in override.items():
-        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+        if key == "channels":
+            merged[key] = copy.deepcopy(value)
+        elif isinstance(value, dict) and isinstance(merged.get(key), dict):
             merged[key] = _merge_dict(merged[key], value)
         else:
             merged[key] = value
@@ -93,6 +141,78 @@ def cmd_run_coherence(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_run_baseline(args: argparse.Namespace) -> int:
+    config = _load_config(args.config, DEFAULT_BASELINE_CONFIG)
+
+    try:
+        result = run_baseline(config=config, event_cb=_emit)
+    except Exception as exc:
+        _emit({"event": "error", "message": str(exc)})
+        return 1
+
+    output_path = Path(args.output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("w", encoding="utf-8") as f:
+        json.dump(result, f, indent=2)
+
+    _emit({"event": "baseline_session_complete", "output_path": str(output_path.resolve())})
+    return 0
+
+
+def cmd_run_live_windows(args: argparse.Namespace) -> int:
+    config = _load_config(args.config, DEFAULT_BASELINE_CONFIG)
+
+    try:
+        result = run_live_windows(config=config, event_cb=_emit)
+    except Exception as exc:
+        _emit({"event": "error", "message": str(exc)})
+        return 1
+
+    output_path = Path(args.output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("w", encoding="utf-8") as f:
+        json.dump(result, f, indent=2)
+
+    _emit({"event": "live_windows_session_complete", "output_path": str(output_path.resolve())})
+    return 0
+
+
+def cmd_run_nf_training(args: argparse.Namespace) -> int:
+    config = _load_config(args.config, DEFAULT_NF_TRAINING_CONFIG)
+
+    try:
+        result = run_nf_training(config=config, event_cb=_emit)
+    except Exception as exc:
+        _emit({"event": "error", "message": str(exc)})
+        return 1
+
+    output_path = Path(args.output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("w", encoding="utf-8") as f:
+        json.dump(result, f, indent=2)
+
+    _emit({"event": "nf_training_session_complete", "output_path": str(output_path.resolve())})
+    return 0
+
+
+def cmd_analyze_progress(args: argparse.Namespace) -> int:
+    config = _load_config(args.config, {"paths": [], "include_default_brainbay_dir": True})
+
+    try:
+        result = analyze_progress(config)
+    except Exception as exc:
+        _emit({"event": "error", "message": str(exc)})
+        return 1
+
+    output_path = Path(args.output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("w", encoding="utf-8") as f:
+        json.dump(result, f, indent=2)
+
+    _emit({"event": "progress_analysis_complete", "output_path": str(output_path.resolve())})
+    return 0
+
+
 def cmd_init_config(args: argparse.Namespace) -> int:
     path = Path(args.output)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -124,6 +244,26 @@ def build_parser() -> argparse.ArgumentParser:
     run_coherence.add_argument("--config", type=str, default=None, help="Path to coherence config JSON")
     run_coherence.add_argument("--output", type=str, required=True, help="Where to write coherence result JSON")
     run_coherence.set_defaults(func=cmd_run_coherence)
+
+    run_baseline_parser = sub.add_parser("run-baseline", help="Run a lightweight 1-16 electrode baseline capture")
+    run_baseline_parser.add_argument("--config", type=str, default=None, help="Path to baseline config JSON")
+    run_baseline_parser.add_argument("--output", type=str, required=True, help="Where to write baseline result JSON")
+    run_baseline_parser.set_defaults(func=cmd_run_baseline)
+
+    live_windows_parser = sub.add_parser("run-live-windows", help="Run live EEG windows with per-window gradient events")
+    live_windows_parser.add_argument("--config", type=str, default=None, help="Path to live window config JSON")
+    live_windows_parser.add_argument("--output", type=str, required=True, help="Where to write live window result JSON")
+    live_windows_parser.set_defaults(func=cmd_run_live_windows)
+
+    nf_training_parser = sub.add_parser("run-nf-training", help="Run live neurofeedback protocol windows")
+    nf_training_parser.add_argument("--config", type=str, default=None, help="Path to NF training config JSON")
+    nf_training_parser.add_argument("--output", type=str, required=True, help="Where to write NF training result JSON")
+    nf_training_parser.set_defaults(func=cmd_run_nf_training)
+
+    progress_parser = sub.add_parser("analyze-progress", help="Normalize BrainBay CSV and result JSON files into progress series")
+    progress_parser.add_argument("--config", type=str, default=None, help="Path to progress config JSON")
+    progress_parser.add_argument("--output", type=str, required=True, help="Where to write progress result JSON")
+    progress_parser.set_defaults(func=cmd_analyze_progress)
 
     init_parser = sub.add_parser("init-config", help="Write a starter config file")
     init_parser.add_argument("--output", type=str, required=True, help="Path for starter config JSON")

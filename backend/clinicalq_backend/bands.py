@@ -4,6 +4,8 @@ from typing import Dict, Tuple
 
 import numpy as np
 
+from clinicalq_backend.filters import clean_eeg_signal
+
 BANDS: Dict[str, Tuple[float, float]] = {
     "delta": (1.5, 2.5),
     "theta": (3.0, 7.0),
@@ -50,14 +52,25 @@ def peak_alpha_frequency(signal: np.ndarray, sampling_rate: int) -> float:
     freqs, amps = _amplitude_spectrum(signal, sampling_rate)
     mask = (freqs >= 8.0) & (freqs <= 12.0)
     if not np.any(mask):
-        return 0.0
+        return float("nan")
     band_freqs = freqs[mask]
     band_amps = amps[mask]
     peak_idx = int(np.argmax(band_amps))
-    return float(band_freqs[peak_idx])
+    if band_amps[peak_idx] <= 0.0 or peak_idx == 0 or peak_idx == len(band_amps) - 1:
+        return float("nan")
+
+    left = float(band_amps[peak_idx - 1])
+    center = float(band_amps[peak_idx])
+    right = float(band_amps[peak_idx + 1])
+    denom = left - 2.0 * center + right
+    bin_width = float(band_freqs[1] - band_freqs[0]) if len(band_freqs) > 1 else 0.0
+    offset = 0.0 if denom == 0.0 else 0.5 * (left - right) / denom
+    offset = float(np.clip(offset, -0.5, 0.5))
+    return float(band_freqs[peak_idx] + offset * bin_width)
 
 
-def extract_features(signal: np.ndarray, sampling_rate: int) -> Dict[str, float]:
+def extract_features(signal: np.ndarray, sampling_rate: int, filters: Dict[str, object] | None = None) -> Dict[str, float]:
+    signal = clean_eeg_signal(signal, sampling_rate, filters)
     features: Dict[str, float] = {}
     for band, (low, high) in BANDS.items():
         features[band] = band_amplitude(signal, sampling_rate, low, high)
@@ -65,4 +78,3 @@ def extract_features(signal: np.ndarray, sampling_rate: int) -> Dict[str, float]
     features["hibeta_plus_beta"] = features["hibeta"] + features["beta"]
     features["peak_alpha"] = peak_alpha_frequency(signal, sampling_rate)
     return features
-

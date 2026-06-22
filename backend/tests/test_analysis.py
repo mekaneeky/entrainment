@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import math
+
+import numpy as np
+
 from clinicalq_backend.analysis import analyze_session
+from clinicalq_backend.bands import extract_features
 
 
 def _feature(
@@ -39,6 +44,12 @@ def _epoch(sequence: str, index: int, label: str, location: str, feature: dict):
         "seconds": 15,
         "features": {location: feature},
     }
+
+
+def test_peak_alpha_ignores_empty_lower_edge_artifact():
+    features = extract_features(np.zeros(250), 250)
+
+    assert math.isnan(features["peak_alpha"])
 
 
 def test_analysis_generates_metrics_and_probes():
@@ -83,3 +94,27 @@ def test_analysis_generates_metrics_and_probes():
     assert result.summary["in_range"] > 0
     assert any("sleep" in probe.lower() for probe in result.summary["potential_symptom_questions"])
 
+
+def test_sweep_post_asymmetry_uses_percentage_points():
+    epochs = [
+        _epoch("F3", 1, "EC", "F3", _feature(theta=10.0, alpha=10.0, beta=10.0)),
+        _epoch("F4", 1, "EC", "F4", _feature(theta=12.0, alpha=11.0, beta=9.0)),
+        _epoch("F3", 2, "SWEEP", "F3", _feature(theta=10.0, alpha=10.0, beta=10.0)),
+        _epoch("F3", 3, "SWEEP_POST", "F3", _feature(theta=10.0, alpha=10.0, beta=10.0)),
+        _epoch("F4", 2, "SWEEP", "F4", _feature(theta=10.0, alpha=10.0, beta=10.0)),
+        _epoch("F4", 3, "SWEEP_POST", "F4", _feature(theta=10.5, alpha=10.4, beta=9.8)),
+    ]
+
+    result = analyze_session(
+        {
+            "mode": "sequential",
+            "sampling_rate": 250,
+            "epoch_seconds": 15,
+            "channels": {"F3": 1, "F4": 2},
+            "epochs": epochs,
+        }
+    )
+
+    metric = next(m for m in result.metrics if m.metric == "SWEEP post Theta asymmetry reduction pp")
+    assert 13.0 < metric.value < 14.0
+    assert metric.normal_range == "> 0 percentage-point reduction"

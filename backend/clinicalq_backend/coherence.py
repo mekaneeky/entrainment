@@ -116,8 +116,20 @@ def _peak_alpha_frequency(signal: Iterable[float], sampling_rate: int) -> float:
     mask = (freqs >= 8.0) & (freqs <= 12.0)
     if not np.any(mask):
         return float("nan")
-    idx = int(np.argmax(amps[mask]))
-    return float(freqs[mask][idx])
+    band_freqs = freqs[mask]
+    band_amps = amps[mask]
+    idx = int(np.argmax(band_amps))
+    if band_amps[idx] <= 0.0 or idx == 0 or idx == len(band_amps) - 1:
+        return float("nan")
+
+    left = float(band_amps[idx - 1])
+    center = float(band_amps[idx])
+    right = float(band_amps[idx + 1])
+    denom = left - 2.0 * center + right
+    bin_width = float(band_freqs[1] - band_freqs[0]) if len(band_freqs) > 1 else 0.0
+    offset = 0.0 if denom == 0.0 else 0.5 * (left - right) / denom
+    offset = float(np.clip(offset, -0.5, 0.5))
+    return float(band_freqs[idx] + offset * bin_width)
 
 
 def _band_coherence_phase(
@@ -370,30 +382,41 @@ def _resolve_norm(
     return None, "missing"
 
 
-def _norm_status_and_z(value: float, norm: Dict[str, Any] | None) -> tuple[str, float, str]:
+def _norm_status_and_z(value: float, norm: Dict[str, Any] | None, z_cutoff: float = 0.5) -> tuple[str, float, str]:
     if norm is None or math.isnan(value):
         return "MISSING", float("nan"), "N/A"
 
     mean = float(norm.get("mean", float("nan")))
     std = float(norm.get("std", float("nan")))
-    low_cut = float(norm.get("cutoff_low", float("nan")))
-    high_cut = float(norm.get("cutoff_high", float("nan")))
     zscore = float("nan") if std <= 0.0 else (value - mean) / std
+    try:
+        raw_cutoff = float(z_cutoff)
+    except (TypeError, ValueError):
+        raw_cutoff = 2.0
+    cutoff = abs(raw_cutoff) if math.isfinite(raw_cutoff) and raw_cutoff > 0 else 2.0
+    if math.isfinite(mean) and math.isfinite(std) and std > 0.0:
+        low_cut = mean - cutoff * std
+        high_cut = mean + cutoff * std
+    else:
+        low_cut = float(norm.get("cutoff_low", float("nan")))
+        high_cut = float(norm.get("cutoff_high", float("nan")))
 
     if math.isnan(low_cut) or math.isnan(high_cut):
         return "MISSING", zscore, "N/A"
 
     status = "IN_RANGE" if low_cut <= value <= high_cut else "OUT_OF_RANGE"
-    return status, zscore, f"{low_cut:.3f}-{high_cut:.3f} (|z|<=2)"
+    cutoff_label = f"{cutoff:g}"
+    return status, zscore, f"{low_cut:.3f}-{high_cut:.3f} (|z|<={cutoff_label})"
 
 
-def _probe_for_metric(metric_type: str, status: str, value: float, norm: Dict[str, Any] | None) -> str:
+def _probe_for_metric(metric_type: str, status: str, value: float, norm: Dict[str, Any] | None, zscore: float = float("nan")) -> str:
     if status != "OUT_OF_RANGE" or norm is None:
         return ""
 
     high_cut = float(norm.get("cutoff_high", float("nan")))
+    is_high = (math.isfinite(zscore) and zscore > 0) or (not math.isfinite(zscore) and not math.isnan(high_cut) and value > high_cut)
     if metric_type in {"coherence", "total_coherence"}:
-        if not math.isnan(high_cut) and value > high_cut:
+        if is_high:
             return "High coherence: screen for over-coupled or rigid network dynamics."
         return "Low coherence: screen for under-integration, distractibility, and reduced network efficiency."
     if metric_type == "phase":
@@ -401,15 +424,15 @@ def _probe_for_metric(metric_type: str, status: str, value: float, norm: Dict[st
     if metric_type == "asymmetry":
         return "Atypical hemispheric asymmetry: correlate with lateralized cognitive/affective features."
     if metric_type in {"band_amplitude", "absolute_power", "relative_power", "total_amplitude"}:
-        if not math.isnan(high_cut) and value > high_cut:
+        if is_high:
             return "Elevated power/amplitude: screen for excess activation or arousal."
         return "Reduced power/amplitude: screen for hypoactivation or slowing."
     if metric_type == "theta_beta_ratio":
-        if not math.isnan(high_cut) and value > high_cut:
+        if is_high:
             return "Elevated theta/beta ratio: correlate with attentional inefficiency."
         return "Low theta/beta ratio: correlate with hypervigilance/anxious activation."
     if metric_type == "peak_alpha_frequency":
-        if not math.isnan(high_cut) and value > high_cut:
+        if is_high:
             return "High peak alpha frequency: correlate with elevated activation profile."
         return "Low peak alpha frequency: correlate with slowed processing."
     return ""
@@ -446,7 +469,7 @@ def _append_metric_row(
     status, zscore, normal_range = _norm_status_and_z(value, norm)
     if source.startswith("age:") and normal_range != "N/A":
         normal_range = f"{normal_range}; {source.split(':', 1)[1]}"
-    probe = _probe_for_metric(metric_type, status, value, norm)
+    probe = _probe_for_metric(metric_type, status, value, norm, zscore)
 
     metrics.append(_as_metric(_display_metric_location(location), metric_label, value, normal_range, status, probe, formula))
 

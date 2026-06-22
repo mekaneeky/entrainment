@@ -5,8 +5,13 @@
   "description": "Offline ClinicalQ desktop app (Electron + Python backend)",
   "main": "main.js",
   "scripts": {
-    "start": "set ELECTRON_RUN_AS_NODE=&& electron . --no-sandbox",
-    "planner": "set ELECTRON_RUN_AS_NODE=&& electron . --planner --no-sandbox"
+    "start": "set ELECTRON_RUN_AS_NODE=&& electron . --launcher --no-sandbox",
+    "clinicalq": "set ELECTRON_RUN_AS_NODE=&& electron . --clinicalq --no-sandbox",
+    "planner": "set ELECTRON_RUN_AS_NODE=&& electron . --planner --no-sandbox",
+    "nf": "set ELECTRON_RUN_AS_NODE=&& electron . --nf --no-sandbox",
+    "disentrainment": "set ELECTRON_RUN_AS_NODE=&& electron . --disentrainment --no-sandbox",
+    "offset-finder": "set ELECTRON_RUN_AS_NODE=&& electron . --offset-finder --no-sandbox",
+    "test:audio": "node tests/isochronic.test.js"
   },
   "devDependencies": {
     "electron": "^33.0.0"
