@@ -1,0 +1,46 @@
+{
+  "format": "entrainment-profile",
+  "version": 1,
+  "method": "hemispheric",
+  "id": "swingle-2001-fixed-10-18",
+  "name": "Swingle 2001 fixed 10/18 Hz AVS (audio approximation)",
+  "description": "Auditory-only isochronic approximation of the optional fixed AVS program in Swingle (2001), Phase Two: Treatment - In Office, journal p. 76: 10/18 Hz alternating every 2 min for 24 min. The paper specifies AVS, not an audio carrier, so this uses a neutral 220-Hz carrier. It excludes the paper's visual stimulation, theta/beta neurofeedback, harmonic home exercises, diagnosis, and clinical supervision; not an isolated or validated treatment. The listed order is assumed to start at 10 Hz.",
+  "masterVolume": 0.12,
+  "rampSec": 0.01,
+  "channels": {
+    "left": {
+      "delaySec": 0,
+      "segments": [
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 10, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 18, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 10, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 18, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 10, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 18, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 10, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 18, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 10, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 18, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 10, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 18, "duty": 0.5, "volume": 1, "phaseDeg": 0 }
+      ]
+    },
+    "right": {
+      "delaySec": 0,
+      "segments": [
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 10, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 18, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 10, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 18, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 10, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 18, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 10, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 18, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 10, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 18, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 10, "duty": 0.5, "volume": 1, "phaseDeg": 0 },
+        { "durationSec": 120, "carrierHz": 220, "pulseHz": 18, "duty": 0.5, "volume": 1, "phaseDeg": 0 }
+      ]
+    }
+  }
+}
