@@ -4,6 +4,8 @@
   "./protocols/swingle-2001.json",
   "./protocols/ochs-2006-historical.json",
   "./protocols/olmstead-2005-ascending.json",
+  "./protocols/olmstead-2005-ascending-5-minute-steps.json",
   "./protocols/olmstead-2005-descending.json",
+  "./protocols/olmstead-2005-descending-5-minute-steps.json",
   "./protocols/siever-2006-carter-review.json"
 ]

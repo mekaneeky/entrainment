@@ -1,0 +1,36 @@
+{
+  "format": "entrainment-profile",
+  "version": 1,
+  "method": "hemispheric",
+  "id": "olmstead-2005-ascending-5-minute-steps",
+  "name": "Olmstead 2005 ascending - inferred 5-minute steps",
+  "description": "Auditory-only approximation of Olmstead (2005), Apparatus, p. 53: seven 5-minute blocks over 35 minutes. The paper reports 14 Hz increasing every 5 minutes to 40 Hz but omits intermediate settings; this profile evenly divides the span: 14, 18.33, 22.67, 27, 31.33, 35.67, 40 Hz. White-light glasses and the optional story are omitted. The carrier was unspecified, so both ears use 220 Hz. Inferred timing-faithful approximation, not the exact device program or a treatment recommendation.",
+  "masterVolume": 0.12,
+  "rampSec": 0.01,
+  "channels": {
+    "left": {
+      "delaySec": 0,
+      "segments": [
+        { "durationSec": 300, "carrierHz": 220, "pulseHz": 14 },
+        { "durationSec": 300, "carrierHz": 220, "pulseHz": 18.333333333333332 },
+        { "durationSec": 300, "carrierHz": 220, "pulseHz": 22.666666666666668 },
+        { "durationSec": 300, "carrierHz": 220, "pulseHz": 27 },
+        { "durationSec": 300, "carrierHz": 220, "pulseHz": 31.333333333333332 },
+        { "durationSec": 300, "carrierHz": 220, "pulseHz": 35.666666666666664 },
+        { "durationSec": 300, "carrierHz": 220, "pulseHz": 40 }
+      ]
+    },
+    "right": {
+      "delaySec": 0,
+      "segments": [
+        { "durationSec": 300, "carrierHz": 220, "pulseHz": 14 },
+        { "durationSec": 300, "carrierHz": 220, "pulseHz": 18.333333333333332 },
+        { "durationSec": 300, "carrierHz": 220, "pulseHz": 22.666666666666668 },
+        { "durationSec": 300, "carrierHz": 220, "pulseHz": 27 },
+        { "durationSec": 300, "carrierHz": 220, "pulseHz": 31.333333333333332 },
+        { "durationSec": 300, "carrierHz": 220, "pulseHz": 35.666666666666664 },
+        { "durationSec": 300, "carrierHz": 220, "pulseHz": 40 }
+      ]
+    }
+  }
+}
