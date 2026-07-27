@@ -132,7 +132,10 @@
         channel.carrierHz = next.carrierHz;
         channel.osc.frequency.setValueAtTime(next.carrierHz, this.ctx.currentTime);
       }
-      if (params.pulseHz !== undefined && next.pulseHz !== channel.pulseHz) { channel.pulseHz = next.pulseHz; reset = true; }
+      if (params.pulseHz !== undefined && next.pulseHz !== channel.pulseHz) {
+        reset = (next.pulseHz === 0) !== (channel.pulseHz === 0);
+        channel.pulseHz = next.pulseHz;
+      }
       if (params.duty !== undefined) channel.duty = next.duty;
       if (params.phaseDeg !== undefined && next.phaseDeg !== channel.phaseDeg) { channel.phaseDeg = next.phaseDeg; reset = true; }
       if (params.volume !== undefined && next.volume !== channel.volume) {
