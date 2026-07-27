@@ -1,5 +1,6 @@
 [
   "./profile.example.json",
   "./protocols/micheletti-1998.json",
-  "./protocols/swingle-2001.json"
+  "./protocols/swingle-2001.json",
+  "./protocols/ochs-2006-historical.json"
 ]
