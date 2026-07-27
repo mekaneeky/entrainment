@@ -1,0 +1,62 @@
+{
+  "format": "entrainment-profile",
+  "version": 1,
+  "method": "hemispheric",
+  "id": "ochs-2006-historical",
+  "name": "Ochs 2006 historical cycle - auditory approximation",
+  "description": "Historical approximation of Ochs's account of Russell: ten 1-minute 10/18 Hz cycles (20 minutes). Ochs described bright red flashing lights, not this app's audio. Both ears use an otherwise unspecified neutral 220 Hz carrier. This is not the EEG-driven LENS protocol or a treatment recommendation.",
+  "masterVolume": 0.12,
+  "rampSec": 0.01,
+  "channels": {
+    "left": {
+      "delaySec": 0,
+      "segments": [
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 }
+      ]
+    },
+    "right": {
+      "delaySec": 0,
+      "segments": [
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
+        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 }
+      ]
+    }
+  }
+}
