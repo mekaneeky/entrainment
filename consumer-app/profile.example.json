@@ -1,0 +1,58 @@
+{
+  "format": "entrainment-profile",
+  "version": 1,
+  "method": "hemispheric",
+  "id": "example-cycle",
+  "name": "Example cycle",
+  "description": "A short format example, not a treatment recommendation.",
+  "masterVolume": 0.12,
+  "rampSec": 0.01,
+  "channels": {
+    "left": {
+      "delaySec": 0,
+      "segments": [
+        {
+          "durationSec": 300,
+          "carrierHz": 220,
+          "carrierHzEnd": 220,
+          "pulseHz": 10,
+          "pulseHzEnd": 8,
+          "duty": 0.5,
+          "volume": 1,
+          "phaseDeg": 0
+        },
+        {
+          "durationSec": 600,
+          "carrierHz": 220,
+          "pulseHz": 8,
+          "duty": 0.5,
+          "volume": 1,
+          "phaseDeg": 0
+        }
+      ]
+    },
+    "right": {
+      "delaySec": 0,
+      "segments": [
+        {
+          "durationSec": 300,
+          "carrierHz": 220,
+          "carrierHzEnd": 220,
+          "pulseHz": 10,
+          "pulseHzEnd": 8,
+          "duty": 0.5,
+          "volume": 1,
+          "phaseDeg": 0
+        },
+        {
+          "durationSec": 600,
+          "carrierHz": 220,
+          "pulseHz": 8,
+          "duty": 0.5,
+          "volume": 1,
+          "phaseDeg": 0
+        }
+      ]
+    }
+  }
+}
