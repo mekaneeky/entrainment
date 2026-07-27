@@ -2,5 +2,7 @@
   "./profile.example.json",
   "./protocols/micheletti-1998.json",
   "./protocols/swingle-2001.json",
-  "./protocols/ochs-2006-historical.json"
+  "./protocols/ochs-2006-historical.json",
+  "./protocols/olmstead-2005-ascending.json",
+  "./protocols/olmstead-2005-descending.json"
 ]

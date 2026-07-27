@@ -1,0 +1,24 @@
+{
+  "format": "entrainment-profile",
+  "version": 1,
+  "method": "hemispheric",
+  "id": "olmstead-2005-ascending",
+  "name": "Olmstead 2005 ascending - audio approximation",
+  "description": "Auditory-only approximation of Olmstead (2005), Apparatus, journal p. 53: a 35-minute excitatory AVS session beginning at 14 Hz and increasing every 5 minutes to 40 Hz. Because the intermediate frequencies were not reported, this profile uses one continuous 14-to-40-Hz ramp instead of inventing step values. The app omits the white-light glasses and optional Disney story soundtrack; auditory carrier was unspecified, so both ears use a neutral 220 Hz. Not a treatment recommendation.",
+  "masterVolume": 0.12,
+  "rampSec": 0.01,
+  "channels": {
+    "left": {
+      "delaySec": 0,
+      "segments": [
+        { "durationSec": 2100, "carrierHz": 220, "pulseHz": 14, "pulseHzEnd": 40 }
+      ]
+    },
+    "right": {
+      "delaySec": 0,
+      "segments": [
+        { "durationSec": 2100, "carrierHz": 220, "pulseHz": 14, "pulseHzEnd": 40 }
+      ]
+    }
+  }
+}
