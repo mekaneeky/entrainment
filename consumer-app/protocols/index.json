@@ -1,4 +1,5 @@
 [
   "./profile.example.json",
-  "./protocols/micheletti-1998.json"
+  "./protocols/micheletti-1998.json",
+  "./protocols/swingle-2001.json"
 ]
