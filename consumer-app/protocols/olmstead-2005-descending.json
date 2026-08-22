@@ -1,24 +1,72 @@
 {
   "format": "entrainment-profile",
-  "version": 1,
+  "version": 2,
   "method": "hemispheric",
   "id": "olmstead-2005-descending",
-  "name": "Olmstead 2005 descending - audio approximation",
-  "description": "Auditory-only approximation of Olmstead (2005), Apparatus, journal p. 53: a 35-minute inhibitory AVS session beginning at 40 Hz and decreasing every 5 minutes to 14 Hz. Because the intermediate frequencies were not reported, this profile uses one continuous 40-to-14-Hz ramp instead of inventing step values. The app omits the white-light glasses and optional Disney story soundtrack; auditory carrier was unspecified, so both ears use a neutral 220 Hz. Not a treatment recommendation.",
-  "masterVolume": 0.12,
-  "rampSec": 0.01,
-  "channels": {
-    "left": {
-      "delaySec": 0,
-      "segments": [
-        { "durationSec": 2100, "carrierHz": 220, "pulseHz": 40, "pulseHzEnd": 14 }
-      ]
-    },
-    "right": {
-      "delaySec": 0,
-      "segments": [
-        { "durationSec": 2100, "carrierHz": 220, "pulseHz": 40, "pulseHzEnd": 14 }
-      ]
+  "name": "Olmstead 2005 descending - AVS",
+  "description": "Olmstead (2005), Apparatus, journal p. 53: a 35-minute inhibitory AVS session beginning at 40 Hz and decreasing every 5 minutes to 14 Hz through white-light glasses. Intermediate frequencies were not reported, so both channels use one continuous ramp instead of inventing steps. Duty and luminance were unreported (50 percent duty, moderate brightness); LEDs cannot reproduce white. The optional story soundtrack is omitted; ears use a neutral 220-Hz carrier. Not a treatment recommendation.",
+  "durationSec": 2100,
+  "requiredOutputs": [
+    "audio"
+  ],
+  "audio": {
+    "masterVolume": 0.12,
+    "rampSec": 0.01,
+    "channels": {
+      "left": {
+        "delaySec": 0,
+        "phaseDeg": 0,
+        "segments": [
+          {
+            "durationSec": 2100,
+            "carrierHz": 220,
+            "pulseHz": 40,
+            "pulseHzEnd": 14
+          }
+        ]
+      },
+      "right": {
+        "delaySec": 0,
+        "phaseDeg": 0,
+        "segments": [
+          {
+            "durationSec": 2100,
+            "carrierHz": 220,
+            "pulseHz": 40,
+            "pulseHzEnd": 14
+          }
+        ]
+      }
+    }
+  },
+  "visual": {
+    "channels": {
+      "left": {
+        "delaySec": 0,
+        "phaseDeg": 0,
+        "segments": [
+          {
+            "durationSec": 2100,
+            "pulseHz": 40,
+            "pulseHzEnd": 14,
+            "duty": 0.5,
+            "intensity": 0.5
+          }
+        ]
+      },
+      "right": {
+        "delaySec": 0,
+        "phaseDeg": 0,
+        "segments": [
+          {
+            "durationSec": 2100,
+            "pulseHz": 40,
+            "pulseHzEnd": 14,
+            "duty": 0.5,
+            "intensity": 0.5
+          }
+        ]
+      }
     }
   }
 }
