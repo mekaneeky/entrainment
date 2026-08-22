@@ -158,7 +158,7 @@
         ? `Firmware ${goggles.info.firmware} · GPIO2 development mirror · keep it off your face`
         : `Device ${goggles.info.deviceId} · firmware ${goggles.info.firmware} · two light channels`;
     } else {
-      $("#goggles-detail").textContent = "Chrome will ask for the unique six-digit code printed on the device. For this dev board, read it from Serial Monitor.";
+      $("#goggles-detail").textContent = "Android pairs automatically over encrypted Bluetooth — confirm the system prompt if one appears. Hold BOOT while resetting to unpair.";
     }
     $("#start-session").disabled = !connected || !$("#visual-confirm").checked || goggles.state === "fault";
   }
