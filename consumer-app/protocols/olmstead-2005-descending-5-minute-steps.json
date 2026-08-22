@@ -1,36 +1,200 @@
 {
   "format": "entrainment-profile",
-  "version": 1,
+  "version": 2,
   "method": "hemispheric",
   "id": "olmstead-2005-descending-5-minute-steps",
   "name": "Olmstead 2005 descending - inferred 5-minute steps",
-  "description": "Auditory-only approximation of Olmstead (2005), Apparatus, p. 53: seven 5-minute blocks over 35 minutes. The paper reports 40 Hz decreasing every 5 minutes to 14 Hz but omits intermediate settings; this profile evenly divides the span: 40, 35.67, 31.33, 27, 22.67, 18.33, 14 Hz. White-light glasses and the optional story are omitted. The carrier was unspecified, so both ears use 220 Hz. Inferred timing-faithful approximation, not the exact device program or a treatment recommendation.",
-  "masterVolume": 0.12,
-  "rampSec": 0.01,
-  "channels": {
-    "left": {
-      "delaySec": 0,
-      "segments": [
-        { "durationSec": 300, "carrierHz": 220, "pulseHz": 40 },
-        { "durationSec": 300, "carrierHz": 220, "pulseHz": 35.666666666666664 },
-        { "durationSec": 300, "carrierHz": 220, "pulseHz": 31.333333333333332 },
-        { "durationSec": 300, "carrierHz": 220, "pulseHz": 27 },
-        { "durationSec": 300, "carrierHz": 220, "pulseHz": 22.666666666666668 },
-        { "durationSec": 300, "carrierHz": 220, "pulseHz": 18.333333333333332 },
-        { "durationSec": 300, "carrierHz": 220, "pulseHz": 14 }
-      ]
-    },
-    "right": {
-      "delaySec": 0,
-      "segments": [
-        { "durationSec": 300, "carrierHz": 220, "pulseHz": 40 },
-        { "durationSec": 300, "carrierHz": 220, "pulseHz": 35.666666666666664 },
-        { "durationSec": 300, "carrierHz": 220, "pulseHz": 31.333333333333332 },
-        { "durationSec": 300, "carrierHz": 220, "pulseHz": 27 },
-        { "durationSec": 300, "carrierHz": 220, "pulseHz": 22.666666666666668 },
-        { "durationSec": 300, "carrierHz": 220, "pulseHz": 18.333333333333332 },
-        { "durationSec": 300, "carrierHz": 220, "pulseHz": 14 }
-      ]
+  "description": "Olmstead (2005), Apparatus, p. 53, through white-light glasses: seven 5-minute blocks over 35 minutes. The paper reports 40 Hz decreasing every 5 minutes to 14 Hz but omits intermediate settings; evenly divided span: 40, 35.67, 31.33, 27, 22.67, 18.33, 14 Hz. Both channels follow these blocks. Duty and luminance were unreported (50 percent duty, moderate brightness); LEDs cannot reproduce white. Carrier unspecified, 220 Hz. Inferred approximation, not the exact program or a treatment.",
+  "durationSec": 2100,
+  "requiredOutputs": [
+    "audio"
+  ],
+  "audio": {
+    "masterVolume": 0.12,
+    "rampSec": 0.01,
+    "channels": {
+      "left": {
+        "delaySec": 0,
+        "phaseDeg": 0,
+        "segments": [
+          {
+            "durationSec": 300,
+            "carrierHz": 220,
+            "pulseHz": 40
+          },
+          {
+            "durationSec": 300,
+            "carrierHz": 220,
+            "pulseHz": 35.666666666666664
+          },
+          {
+            "durationSec": 300,
+            "carrierHz": 220,
+            "pulseHz": 31.333333333333332
+          },
+          {
+            "durationSec": 300,
+            "carrierHz": 220,
+            "pulseHz": 27
+          },
+          {
+            "durationSec": 300,
+            "carrierHz": 220,
+            "pulseHz": 22.666666666666668
+          },
+          {
+            "durationSec": 300,
+            "carrierHz": 220,
+            "pulseHz": 18.333333333333332
+          },
+          {
+            "durationSec": 300,
+            "carrierHz": 220,
+            "pulseHz": 14
+          }
+        ]
+      },
+      "right": {
+        "delaySec": 0,
+        "phaseDeg": 0,
+        "segments": [
+          {
+            "durationSec": 300,
+            "carrierHz": 220,
+            "pulseHz": 40
+          },
+          {
+            "durationSec": 300,
+            "carrierHz": 220,
+            "pulseHz": 35.666666666666664
+          },
+          {
+            "durationSec": 300,
+            "carrierHz": 220,
+            "pulseHz": 31.333333333333332
+          },
+          {
+            "durationSec": 300,
+            "carrierHz": 220,
+            "pulseHz": 27
+          },
+          {
+            "durationSec": 300,
+            "carrierHz": 220,
+            "pulseHz": 22.666666666666668
+          },
+          {
+            "durationSec": 300,
+            "carrierHz": 220,
+            "pulseHz": 18.333333333333332
+          },
+          {
+            "durationSec": 300,
+            "carrierHz": 220,
+            "pulseHz": 14
+          }
+        ]
+      }
+    }
+  },
+  "visual": {
+    "channels": {
+      "left": {
+        "delaySec": 0,
+        "phaseDeg": 0,
+        "segments": [
+          {
+            "durationSec": 300,
+            "pulseHz": 40,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 300,
+            "pulseHz": 35.666666666666664,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 300,
+            "pulseHz": 31.333333333333332,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 300,
+            "pulseHz": 27,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 300,
+            "pulseHz": 22.666666666666668,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 300,
+            "pulseHz": 18.333333333333332,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 300,
+            "pulseHz": 14,
+            "duty": 0.5,
+            "intensity": 0.5
+          }
+        ]
+      },
+      "right": {
+        "delaySec": 0,
+        "phaseDeg": 0,
+        "segments": [
+          {
+            "durationSec": 300,
+            "pulseHz": 40,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 300,
+            "pulseHz": 35.666666666666664,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 300,
+            "pulseHz": 31.333333333333332,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 300,
+            "pulseHz": 27,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 300,
+            "pulseHz": 22.666666666666668,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 300,
+            "pulseHz": 18.333333333333332,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 300,
+            "pulseHz": 14,
+            "duty": 0.5,
+            "intensity": 0.5
+          }
+        ]
+      }
     }
   }
 }

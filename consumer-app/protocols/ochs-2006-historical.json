@@ -1,62 +1,486 @@
 {
   "format": "entrainment-profile",
-  "version": 1,
+  "version": 2,
   "method": "hemispheric",
   "id": "ochs-2006-historical",
-  "name": "Ochs 2006 historical cycle - auditory approximation",
-  "description": "Historical approximation of Ochs's account of Russell: ten 1-minute 10/18 Hz cycles (20 minutes). Ochs described bright red flashing lights, not this app's audio. Both ears use an otherwise unspecified neutral 220 Hz carrier. This is not the EEG-driven LENS protocol or a treatment recommendation.",
-  "masterVolume": 0.12,
-  "rampSec": 0.01,
-  "channels": {
-    "left": {
-      "delaySec": 0,
-      "segments": [
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 }
-      ]
-    },
-    "right": {
-      "delaySec": 0,
-      "segments": [
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 10 },
-        { "durationSec": 60, "carrierHz": 220, "pulseHz": 18 }
-      ]
+  "name": "Ochs 2006 historical cycle - lights + tone",
+  "description": "Historical approximation of Ochs's account of Russell: ten 1-minute 10/18 Hz cycles (20 minutes). Ochs described bright red flashing lights paired with this cycle, so the visual channels mirror it; this hardware's fixed LED color cannot reproduce red on command. Duty, luminance, and phase were unspecified (50 percent duty, moderate fixed brightness, eyes in phase). Both ears use an unspecified neutral 220 Hz carrier. This is not the EEG-driven LENS protocol or a treatment recommendation.",
+  "durationSec": 1200,
+  "requiredOutputs": [
+    "audio"
+  ],
+  "audio": {
+    "masterVolume": 0.12,
+    "rampSec": 0.01,
+    "channels": {
+      "left": {
+        "delaySec": 0,
+        "phaseDeg": 0,
+        "segments": [
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 10
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 18
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 10
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 18
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 10
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 18
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 10
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 18
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 10
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 18
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 10
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 18
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 10
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 18
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 10
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 18
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 10
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 18
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 10
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 18
+          }
+        ]
+      },
+      "right": {
+        "delaySec": 0,
+        "phaseDeg": 0,
+        "segments": [
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 10
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 18
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 10
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 18
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 10
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 18
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 10
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 18
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 10
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 18
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 10
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 18
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 10
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 18
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 10
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 18
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 10
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 18
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 10
+          },
+          {
+            "durationSec": 60,
+            "carrierHz": 220,
+            "pulseHz": 18
+          }
+        ]
+      }
+    }
+  },
+  "visual": {
+    "channels": {
+      "left": {
+        "delaySec": 0,
+        "phaseDeg": 0,
+        "segments": [
+          {
+            "durationSec": 60,
+            "pulseHz": 10,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 18,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 10,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 18,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 10,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 18,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 10,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 18,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 10,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 18,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 10,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 18,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 10,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 18,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 10,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 18,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 10,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 18,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 10,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 18,
+            "duty": 0.5,
+            "intensity": 0.5
+          }
+        ]
+      },
+      "right": {
+        "delaySec": 0,
+        "phaseDeg": 0,
+        "segments": [
+          {
+            "durationSec": 60,
+            "pulseHz": 10,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 18,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 10,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 18,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 10,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 18,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 10,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 18,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 10,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 18,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 10,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 18,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 10,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 18,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 10,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 18,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 10,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 18,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 10,
+            "duty": 0.5,
+            "intensity": 0.5
+          },
+          {
+            "durationSec": 60,
+            "pulseHz": 18,
+            "duty": 0.5,
+            "intensity": 0.5
+          }
+        ]
+      }
     }
   }
 }

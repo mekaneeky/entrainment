@@ -373,12 +373,13 @@
     if (!response.ok) throw new Error("Built-in protocols could not be loaded");
     const paths = await response.json();
     if (!Array.isArray(paths)) throw new Error("Built-in protocol index is invalid");
-    const known = new Set(data().profiles.map((profile) => profile.id));
+    const known = new Map(data().profiles.map((profile) => [profile.id, profile]));
     for (const path of paths) {
       const profileResponse = await fetch(path);
       if (!profileResponse.ok) throw new Error(`Built-in protocol could not be loaded: ${path}`);
       const profile = Core.parseProfileFile(await profileResponse.text());
-      if (!known.has(profile.id)) store.putProfile(profile);
+      const existing = known.get(profile.id);
+      if (!existing || JSON.stringify(existing) !== JSON.stringify(profile)) store.putProfile(profile);
     }
   }
 
