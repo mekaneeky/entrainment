@@ -3,6 +3,7 @@ const {
   normalizeIsochronicParams,
   buildIsochronicPulseEvents,
 } = require("../isochronic");
+const { IsochronicTone: ConsumerTone } = require("../../consumer-app/isochronic");
 
 function approx(actual, expected, tolerance = 1e-9) {
   assert.ok(Math.abs(actual - expected) <= tolerance, `${actual} != ${expected}`);
@@ -60,6 +61,43 @@ function approx(actual, expected, tolerance = 1e-9) {
   assert.ok(plan.ramp <= plan.onSec / 3);
   assert.ok(plan.events.every((event) => Number.isFinite(event.time)));
   assert.ok(plan.events.every((event) => event.value === 0 || event.value === 1));
+}
+
+{
+  const resets = [];
+  const gain = {
+    value: 0,
+    cancelAndHoldAtTime: (time) => resets.push(["cancel", time]),
+    setTargetAtTime: (value, time) => resets.push(["target", value, time]),
+  };
+  const tone = new ConsumerTone();
+  tone.ctx = { currentTime: 100 };
+  tone.channels.left = {
+    carrierHz: 220,
+    pulseHz: 14,
+    duty: 0.5,
+    volume: 1,
+    phaseDeg: 0,
+    nextPulseTime: 100.2,
+    osc: { frequency: { setValueAtTime() {} } },
+    gate: { gain },
+    level: { gain: { setTargetAtTime() {} } },
+  };
+
+  tone.setChannel("left", { pulseHz: 14.1 });
+  assert.equal(tone.channels.left.nextPulseTime, 100.2, "nonzero pulse changes must preserve the pulse train");
+  assert.equal(resets.length, 0, "ramps and stepped protocols must not insert a dropout");
+
+  tone.setChannel("left", { pulseHz: 0 });
+  assert.deepEqual(resets.at(-1), ["target", 1, 100], "silent/continuous segments must still switch modes");
+
+  resets.length = 0;
+  tone.setChannel("left", { pulseHz: 18 });
+  assert.deepEqual(resets.at(-1), ["target", 0, 100], "pulsing must restart after a continuous segment");
+
+  resets.length = 0;
+  tone.setChannel("left", { phaseDeg: 180 });
+  assert.equal(resets[0][0], "cancel", "hemisphere phase changes must still resynchronize the channel");
 }
 
 console.log("isochronic scheduler tests passed");

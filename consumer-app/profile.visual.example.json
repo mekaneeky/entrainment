@@ -1,0 +1,48 @@
+{
+  "format": "entrainment-profile",
+  "version": 2,
+  "method": "hemispheric",
+  "id": "development-av-sync-check",
+  "name": "Development AV sync check",
+  "description": "A 30-second off-face hardware check for the GPIO2 development build. It is not a wellness protocol and must not be worn.",
+  "durationSec": 30,
+  "requiredOutputs": ["audio"],
+  "audio": {
+    "masterVolume": 0.08,
+    "rampSec": 0.01,
+    "channels": {
+      "left": {
+        "delaySec": 0,
+        "phaseDeg": 0,
+        "segments": [
+          { "durationSec": 30, "carrierHz": 220, "pulseHz": 10, "duty": 0.5, "volume": 1 }
+        ]
+      },
+      "right": {
+        "delaySec": 0,
+        "phaseDeg": 180,
+        "segments": [
+          { "durationSec": 30, "carrierHz": 220, "pulseHz": 10, "duty": 0.5, "volume": 1 }
+        ]
+      }
+    }
+  },
+  "visual": {
+    "channels": {
+      "left": {
+        "delaySec": 0,
+        "phaseDeg": 0,
+        "segments": [
+          { "durationSec": 30, "pulseHz": 10, "duty": 0.5, "intensity": 0.1 }
+        ]
+      },
+      "right": {
+        "delaySec": 0,
+        "phaseDeg": 180,
+        "segments": [
+          { "durationSec": 30, "pulseHz": 10, "duty": 0.5, "intensity": 0.1 }
+        ]
+      }
+    }
+  }
+}
