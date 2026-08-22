@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "listening-room-";
-const CACHE = `${CACHE_PREFIX}v17`;
+const CACHE = `${CACHE_PREFIX}v18`;
 const PROFILE_INDEX = "./protocols/index.json";
 const SHELL = [
   "./index.html",
@@ -16,16 +16,24 @@ const SHELL = [
   "./icon-512.png"
 ];
 
+async function cacheFresh(cache, path) {
+  const key = new URL(path, self.registration.scope);
+  const url = new URL(key);
+  url.searchParams.set("build", CACHE);
+  const response = await fetch(url, { cache: "reload" });
+  if (!response.ok) throw new Error(`Could not cache ${path}`);
+  await cache.put(key, response.clone());
+  return response;
+}
+
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE)
-      .then(async (cache) => {
-        await cache.addAll(SHELL);
-        const response = await cache.match(PROFILE_INDEX);
-        await cache.addAll(await response.json());
-      })
-      .then(() => self.skipWaiting())
-  );
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    const index = await cacheFresh(cache, PROFILE_INDEX);
+    await Promise.all(SHELL.filter((path) => path !== PROFILE_INDEX).map((path) => cacheFresh(cache, path)));
+    await Promise.all((await index.json()).map((path) => cacheFresh(cache, path)));
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener("activate", (event) => {
