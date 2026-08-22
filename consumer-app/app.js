@@ -692,7 +692,15 @@
     try {
       await ensureBuiltInProfiles();
       navigator.storage?.persist?.().catch(() => {});
-      if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("./service-worker.js").catch(() => {});
+      if ("serviceWorker" in navigator && location.protocol !== "file:") {
+        const serviceWorker = navigator.serviceWorker;
+        const hadController = Boolean(serviceWorker.controller);
+        serviceWorker.addEventListener("controllerchange", () => {
+          if (!hadController || runner.active) return;
+          location.reload();
+        });
+        serviceWorker.register("./service-worker.js").catch(() => {});
+      }
       renderAll();
       navigate(data().goals.length ? "home" : "welcome", false);
     } catch (error) {
