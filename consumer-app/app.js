@@ -3,7 +3,8 @@
 
   const Core = window.EntrainmentCore;
   const store = new Core.LocalStore();
-  const runner = new Core.SessionRunner();
+  const goggles = new window.EntrainmentGoggles.GogglesController();
+  const runner = new Core.SessionRunner(undefined, window, goggles);
   const screens = new Map([...document.querySelectorAll("[data-screen]")].map((node) => [node.dataset.screen, node]));
   const mainScreens = new Set(["home", "progress", "sessions"]);
   const history = [];
@@ -21,7 +22,10 @@
     pending: null,
     wakeLock: null,
     ending: false,
+    useVisual: false,
+    labBusy: false,
   };
+  try { goggles.setFlashLatency(Number(localStorage.getItem("entrainment.flashLatencyMs")) || 0); } catch {}
   let toastTimer;
 
   const $ = (selector) => document.querySelector(selector);
@@ -56,6 +60,7 @@
     if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
     window.scrollTo(0, 0);
     if (name === "home" || name === "progress" || name === "sessions") renderAll();
+    if (name === "prepare") renderPreparation();
   }
 
   function goBack() { navigate(history.pop() || "home", false); }
@@ -96,12 +101,165 @@
     select.replaceChildren(...profiles.map((profile) => new Option(profile.name, profile.id)));
     select.value = state.activeProfileId;
     const profile = activeProfile();
-    const method = "hemispheric stereo";
+    const outputs = profile ? [profile.audio ? "Audio" : null, profile.visual ? "Visual" : null].filter(Boolean) : [];
+    const method = outputs.join(" + ").toLowerCase();
     $("#profile-name").textContent = profile?.name || "Import a session profile";
     $("#profile-description").textContent = profile?.description || "No profile is available yet.";
     $("#profile-duration").textContent = profile ? `${formatDuration(Core.totalDuration(profile))} · ${method}` : "";
     $("#listening-title").textContent = profile?.name || "Listening";
-    $("#signal-method").textContent = `${method} · headphones`;
+    $("#signal-method").textContent = profile?.audio ? `${method} · headphones` : method;
+    $("#profile-outputs").replaceChildren(...outputs.map((output) => {
+      const badge = document.createElement("span");
+      const required = profile.requiredOutputs.includes(output.toLowerCase());
+      badge.textContent = `${output}${required ? " required" : " optional"}`;
+      return badge;
+    }));
+    $("#audio-level-controls").hidden = !profile?.audio;
+    const visualOption = $("#visual-option");
+    visualOption.hidden = !profile?.visual;
+    if (profile?.visual) {
+      const required = profile.requiredOutputs.includes("visual");
+      if (required) state.useVisual = true;
+      $("#use-visual").checked = state.useVisual;
+      $("#use-visual").disabled = required;
+      $("#visual-requirement").textContent = required ? "Required" : "Optional";
+      $("#visual-option-copy").textContent = required
+        ? "This protocol only starts after compatible goggles are connected."
+        : "Leave this off for an audio-only session. The protocol itself is unchanged.";
+    } else {
+      state.useVisual = false;
+    }
+    renderPreparation();
+  }
+
+  function renderPreparation() {
+    const profile = activeProfile();
+    const wantsVisual = Boolean(profile?.visual && state.useVisual);
+    $("#goggles-panel").hidden = !wantsVisual;
+    $("#prepare-list").hidden = wantsVisual;
+    $("#prepare-lead").textContent = wantsVisual
+      ? "Connect headphones and goggles, complete the light check, then settle somewhere safe."
+      : profile?.audio ? "Connect headphones, settle somewhere safe, then place your phone down." : "Prepare your equipment and settle somewhere safe.";
+    if (!wantsVisual) {
+      $("#start-session").disabled = false;
+      return;
+    }
+    const connected = goggles.connected;
+    $("#goggles-kind").textContent = profile.requiredOutputs.includes("visual") ? "Required equipment" : "Optional equipment";
+    const stateLabels = { disconnected: "Not connected", connecting: "Connecting…", ready: "Ready", loading: "Loading…", armed: "Synchronized", running: "Running", fault: "Fault" };
+    $("#goggles-state").textContent = stateLabels[goggles.state] || goggles.state;
+    $("#goggles-state").classList.toggle("ready", connected && goggles.state !== "fault");
+    $("#connect-goggles").hidden = connected;
+    $("#connect-goggles").disabled = goggles.state === "connecting";
+    $("#test-goggles").hidden = !connected;
+    if (connected) {
+      const development = goggles.info?.developmentOutput;
+      $("#goggles-detail").textContent = development
+        ? `Firmware ${goggles.info.firmware} · GPIO2 development mirror · keep it off your face`
+        : `Device ${goggles.info.deviceId} · firmware ${goggles.info.firmware} · two light channels`;
+    } else {
+      $("#goggles-detail").textContent = "Chrome will ask for the unique six-digit code printed on the device. For this dev board, read it from Serial Monitor.";
+    }
+    $("#start-session").disabled = !connected || !$("#visual-confirm").checked || goggles.state === "fault";
+  }
+
+  function labUnlocked() { return localStorage.getItem("entrainment.labUnlocked") === "1"; }
+
+  function renderLab() {
+    const unlocked = labUnlocked();
+    $("#lab-tools").hidden = !unlocked;
+    if (!unlocked) return;
+    const connected = goggles.connected;
+    $("#lab-current").textContent = `${goggles.flashLatencyMs} ms`;
+    if (!Number.isFinite(Number($("#lab-latency-input").value)) || $("#lab-latency-input").value === "") $("#lab-latency-input").value = String(goggles.flashLatencyMs);
+    $("#lab-connect").hidden = connected;
+    $("#lab-connect").disabled = goggles.state === "connecting" || state.labBusy;
+    $("#lab-measure").disabled = !connected || state.labBusy;
+    $("#lab-save").disabled = state.labBusy;
+    $("#lab-reset").disabled = state.labBusy;
+  }
+
+  function applyFlashLatency(ms, fromMeasurement = false) {
+    const value = goggles.setFlashLatency(ms);
+    localStorage.setItem("entrainment.flashLatencyMs", String(value));
+    $("#lab-latency-input").value = String(value);
+    renderLab();
+    toast(fromMeasurement ? `Flashes arrive about ${value} ms late · offset applied` : `Flash offset saved: ${value} ms`);
+  }
+
+  function sampleCameraFrames(video, durationMs) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 48;
+    canvas.height = 36;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    const samples = [];
+    const startedAt = performance.now();
+    let anchorWallMs = null;
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(samples), durationMs + 2500);
+      const draw = (mediaTimeSec) => {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+        let total = 0;
+        for (let index = 0; index < data.length; index += 4) total += 0.2126 * data[index] + 0.7152 * data[index + 1] + 0.0722 * data[index + 2];
+        samples.push({
+          tMs: anchorWallMs === null ? performance.now() : anchorWallMs + mediaTimeSec * 1000,
+          luma: total / (data.length / 4),
+        });
+        if (performance.now() - startedAt >= durationMs) return resolve(samples);
+        schedule();
+      };
+      const schedule = () => {
+        if (typeof video.requestVideoFrameCallback === "function") {
+          video.requestVideoFrameCallback((_now, metadata) => {
+            if (anchorWallMs === null) anchorWallMs = performance.now() - metadata.mediaTime * 1000;
+            draw(metadata.mediaTime);
+          });
+        } else {
+          requestAnimationFrame(() => draw(null));
+        }
+      };
+      schedule();
+    });
+  }
+
+  async function releaseLabCamera() {
+    const video = $("#lab-video");
+    video.srcObject?.getTracks?.().forEach((track) => track.stop());
+    video.srcObject = null;
+    video.hidden = true;
+  }
+
+  async function runFlashCalibration() {
+    const GogglesApi = window.EntrainmentGoggles;
+    if (!goggles.connected) throw new Error("Connect the goggles first.");
+    const status = $("#lab-status");
+    status.textContent = "Requesting camera…";
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 320 }, height: { ideal: 240 } }, audio: false });
+    const video = $("#lab-video");
+    try {
+      video.srcObject = stream;
+      video.hidden = false;
+      await video.play();
+      status.textContent = "Point the LEDs at the camera in dim light. Keep them in frame for ~10 seconds…";
+      await goggles.loadSchedule(GogglesApi.calibrationVisual(goggles.info?.maxIntensity ?? 1), GogglesApi.CALIBRATION.durationSec + 4);
+      await goggles.synchronize();
+      const startAt = performance.now() + 1500;
+      await goggles.arm(startAt);
+      const finished = sampleCameraFrames(video, 1500 + GogglesApi.CALIBRATION.durationSec * 1000 + 400);
+      await goggles.commit(() => (performance.now() - startAt) * 1000);
+      const result = GogglesApi.analyzeFlashLatency(await finished, { startPerformanceMs: startAt });
+      applyFlashLatency(result.latencyMs, true);
+      status.textContent = `Matched ${result.matched} of ${result.onsets} flashes · offset ${result.latencyMs >= 0 ? "+" : ""}${result.latencyMs} ms saved.`;
+    } catch (error) {
+      status.textContent = error.message || String(error);
+      throw error;
+    } finally {
+      await goggles.stop().catch(() => {});
+      await releaseLabCamera();
+      state.labBusy = false;
+      renderLab();
+    }
   }
 
   function rangeStart(range) {
@@ -197,7 +355,7 @@
       const row = document.createElement("article"); row.className = "session-row";
       const text = document.createElement("div");
       const name = document.createElement("strong"); name.textContent = profiles.get(session.profileId) || "Imported profile";
-      const meta = document.createElement("small"); meta.textContent = `${new Date(session.endedAt).toLocaleString()} · ${goals.get(goalId)?.label || "No check-in"} · ${session.status}`;
+      const meta = document.createElement("small"); meta.textContent = `${new Date(session.endedAt).toLocaleString()} · ${session.outputsUsed.join(" + ")} · ${goals.get(goalId)?.label || "No check-in"} · ${session.status}`;
       text.append(name, meta);
       const score = document.createElement("span"); score.className = "session-score"; score.textContent = Number.isFinite(before) && Number.isFinite(after) ? `${before} → ${after}` : "—";
       row.append(text, score); return row;
@@ -207,7 +365,7 @@
   function renderAll() {
     const hour = new Date().getHours();
     $("#home-greeting").textContent = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-    renderGoalSelects(); renderProfiles(); renderCharts(); renderSessions();
+    renderGoalSelects(); renderProfiles(); renderCharts(); renderSessions(); renderLab();
   }
 
   async function ensureBuiltInProfiles() {
@@ -262,6 +420,7 @@
       after: Number.isFinite(afterScore) ? { [goal.id]: afterScore } : {},
       beforeNote: state.pending.beforeNote,
       afterNote: $("#after-note").value.trim(),
+      outputsUsed: state.pending.outputsUsed,
     };
   }
 
@@ -272,6 +431,7 @@
     state.ending = true;
     state.pending.endedAt = new Date().toISOString();
     state.pending.status = result.status === "completed" ? "completed" : "stopped";
+    state.pending.outputsUsed = result.outputs || state.pending.outputsUsed || ["audio"];
     releaseWakeLock();
     try { persistPending(undefined); } catch (error) { $("#save-error").textContent = `The session ended but has not been saved: ${error.message}`; }
     $("#resume-audio").hidden = true;
@@ -284,11 +444,16 @@
     const button = $("#start-session");
     const profile = activeProfile();
     if (!profile) { $("#start-error").textContent = "Import a profile before starting."; return; }
+    if (profile.visual && state.useVisual && !goggles.connected) { $("#start-error").textContent = "Connect the goggles before starting this visual session."; return; }
+    if (profile.visual && state.useVisual && !$("#visual-confirm").checked) { $("#start-error").textContent = "Confirm the flashing-light warning before starting."; return; }
     button.disabled = true;
     $("#start-error").textContent = "";
     state.ending = false;
     const level = Number($("#volume").value) / 100;
-    const playable = { ...profile, masterVolume: Math.min(profile.masterVolume, 0.2) * level };
+    const playable = profile.audio ? {
+      ...profile,
+      audio: { ...profile.audio, masterVolume: Math.min(profile.audio.masterVolume, 0.2) * level },
+    } : profile;
     const checkin = state.pending;
     state.pending = {
       id: makeId("session"),
@@ -298,9 +463,14 @@
       status: "stopped",
       before: checkin?.before,
       beforeNote: checkin?.beforeNote || "",
+      outputsUsed: profile.audio ? ["audio"] : ["visual"],
     };
     try {
       const start = runner.start(playable, {
+        useVisual: Boolean(profile.visual && state.useVisual),
+        onStart: ({ outputs }) => {
+          state.pending.outputsUsed = outputs;
+        },
         onProgress: ({ elapsedSec, durationSec }) => { $("#session-clock").textContent = formatTime(durationSec - elapsedSec); },
         onAudioState: (audioState) => {
           const interrupted = audioState !== "running";
@@ -310,8 +480,11 @@
         onEnd: sessionEnded,
       });
       requestWakeLock();
-      await start;
+      const started = await start;
       $("#session-clock").textContent = formatTime(Core.totalDuration(profile));
+      $("#signal-method").textContent = `${started.outputs.join(" + ")} · ${profile.method}`;
+      $("#visual-status").hidden = !started.outputs.includes("visual");
+      $("#visual-status").textContent = goggles.info?.developmentOutput ? "GPIO2 development mirror active · do not wear" : "Goggles synchronized.";
       navigate("listening");
     } catch (error) {
       state.pending = checkin;
@@ -411,11 +584,45 @@
   $("#volume").addEventListener("input", (event) => { $("#volume-output").textContent = `${event.target.value}%`; });
   $("#home-goal").addEventListener("change", (event) => { state.activeGoalId = event.target.value; localStorage.setItem("entrainment.activeGoal", state.activeGoalId); renderAll(); });
   $("#progress-goal").addEventListener("change", (event) => { state.activeGoalId = event.target.value; localStorage.setItem("entrainment.activeGoal", state.activeGoalId); renderAll(); });
-  $("#profile-select").addEventListener("change", (event) => { state.activeProfileId = event.target.value; localStorage.setItem("entrainment.activeProfile", state.activeProfileId); renderProfiles(); });
+  $("#profile-select").addEventListener("change", (event) => {
+    state.activeProfileId = event.target.value;
+    localStorage.setItem("entrainment.activeProfile", state.activeProfileId);
+    state.useVisual = activeProfile()?.requiredOutputs.includes("visual") || false;
+    $("#visual-confirm").checked = false;
+    renderProfiles();
+  });
   $("#save-before").addEventListener("click", () => { state.pending = { before: Number($("#before-rating").value), beforeNote: $("#before-note").value.trim() }; navigate("plan"); });
   $("#skip-before").addEventListener("click", () => { state.pending = { before: undefined, beforeNote: $("#before-note").value.trim() }; navigate("plan"); });
   $("#import-profile").addEventListener("click", () => $("#profile-file").click());
   $("#profile-file").addEventListener("change", async (event) => { try { await importProfile(event.target.files[0]); } catch (error) { toast(error.message); } event.target.value = ""; });
+  $("#use-visual").addEventListener("change", (event) => {
+    state.useVisual = event.target.checked;
+    $("#visual-confirm").checked = false;
+    renderPreparation();
+  });
+  $("#visual-confirm").addEventListener("change", renderPreparation);
+  $("#connect-goggles").addEventListener("click", async () => {
+    const button = $("#connect-goggles");
+    button.disabled = true;
+    $("#start-error").textContent = "";
+    try { await goggles.connect(); }
+    catch (error) { $("#start-error").textContent = error.message || String(error); }
+    finally { button.disabled = false; renderPreparation(); }
+  });
+  $("#test-goggles").addEventListener("click", async () => {
+    const button = $("#test-goggles");
+    button.disabled = true;
+    try {
+      for (const count of [3, 2, 1]) {
+        button.textContent = `Dim test in ${count}…`;
+        await new Promise((resolve) => setTimeout(resolve, 700));
+      }
+      button.textContent = "Testing…";
+      await goggles.testLight();
+      toast("One-second dim test sent");
+    } catch (error) { $("#start-error").textContent = error.message || String(error); }
+    finally { button.textContent = "Test dim light"; button.disabled = false; }
+  });
   $("#start-session").addEventListener("click", startSession);
   $("#end-session").addEventListener("click", () => runner.stop("stopped"));
   $("#return-checkin").addEventListener("click", () => navigate("after"));
@@ -426,13 +633,60 @@
   $("#import-backup").addEventListener("click", () => $("#backup-file").click());
   $("#backup-file").addEventListener("change", async (event) => { try { await importBackup(event.target.files[0]); } catch (error) { toast(error.message); } event.target.value = ""; });
 
+  goggles.addEventListener("statechange", () => { renderPreparation(); renderLab(); });
+  goggles.addEventListener("fault", (event) => {
+    renderPreparation();
+    renderLab();
+    if (!runner.active) $("#start-error").textContent = event.detail?.error?.message || "Goggles faulted";
+  });
+
+  let pillTaps = 0;
+  let pillTimer;
+  document.querySelector('[data-screen="sessions"] .local-pill').addEventListener("pointerdown", () => {
+    clearTimeout(pillTimer);
+    pillTaps += 1;
+    pillTimer = setTimeout(() => { pillTaps = 0; }, 2500);
+    if (pillTaps < 5) return;
+    pillTaps = 0;
+    const unlock = !labUnlocked();
+    localStorage.setItem("entrainment.labUnlocked", unlock ? "1" : "0");
+    renderLab();
+    if (unlock) toast("Hardware lab unlocked");
+  });
+  $("#lab-connect").addEventListener("click", async () => {
+    $("#lab-status").textContent = "";
+    try { await goggles.connect(); }
+    catch (error) { $("#lab-status").textContent = error.message || String(error); }
+    finally { renderLab(); }
+  });
+  $("#lab-measure").addEventListener("click", async () => {
+    const button = $("#lab-measure");
+    button.disabled = true;
+    state.labBusy = true;
+    renderLab();
+    try { await runFlashCalibration(); }
+    catch {}
+  });
+  $("#lab-save").addEventListener("click", () => {
+    try { applyFlashLatency(Number($("#lab-latency-input").value)); $("#lab-status").textContent = ""; }
+    catch (error) { $("#lab-status").textContent = error.message; }
+  });
+  $("#lab-reset").addEventListener("click", () => {
+    try { applyFlashLatency(0); $("#lab-status").textContent = ""; }
+    catch (error) { $("#lab-status").textContent = error.message; }
+  });
+
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState !== "visible" || state.screen !== "listening") return;
+    if (document.visibilityState !== "visible") {
+      if (runner.active?.outputs.includes("visual")) runner.stop("backgrounded");
+      return;
+    }
+    if (state.screen !== "listening") return;
     requestWakeLock();
     if (runner.tone.ctx?.state !== "running") $("#resume-audio").hidden = false;
   });
 
-  window.addEventListener("pagehide", () => { if (runner.active) runner.stop("stopped"); });
+  window.addEventListener("pagehide", () => { if (runner.active) runner.stop("stopped"); else goggles.stop().catch(() => {}); });
 
   async function init() {
     try {
@@ -448,6 +702,6 @@
     }
   }
 
-  window.__listeningRoom = { get state() { return { ...state }; }, navigate, store, runner };
+  window.__listeningRoom = { get state() { return { ...state }; }, goggles, navigate, store, runner };
   init();
 })();

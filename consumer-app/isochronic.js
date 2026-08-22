@@ -61,6 +61,9 @@
       this.timer = null;
       this.masterVolume = 0.12;
       this.rampSec = DEFAULT_RAMP_SEC;
+      this.timelineNode = null;
+      this.timelineGain = null;
+      this.workletReady = null;
     }
 
     ensureContext() {
@@ -68,6 +71,50 @@
       const Ctx = root.AudioContext || root.webkitAudioContext;
       this.ctx = new Ctx();
       return this.ctx;
+    }
+
+    async prepareTimeline() {
+      const ctx = this.ensureContext();
+      if (ctx.state !== "running") await ctx.resume();
+      if (!ctx.audioWorklet || !root.AudioWorkletNode) throw new Error("This browser does not support the precise audio scheduler");
+      if (!this.workletReady) {
+        const url = new URL("./isochronic-worklet.js", root.location.href).href;
+        this.workletReady = ctx.audioWorklet.addModule(url).catch((error) => {
+          this.workletReady = null;
+          throw error;
+        });
+      }
+      await this.workletReady;
+      return ctx;
+    }
+
+    contextTimeForPerformance(performanceMs) {
+      const ctx = this.ensureContext();
+      const stamp = ctx.getOutputTimestamp?.();
+      if (Number.isFinite(stamp?.contextTime) && Number.isFinite(stamp?.performanceTime) && stamp.performanceTime > 0) {
+        return stamp.contextTime + (performanceMs - stamp.performanceTime) / 1000;
+      }
+      return ctx.currentTime + (performanceMs - root.performance.now()) / 1000;
+    }
+
+    async startTimeline(audio, startTime) {
+      const ctx = await this.prepareTimeline();
+      if (!audio?.channels?.left || !audio?.channels?.right) throw new TypeError("left and right audio channels are required");
+      if (!Number.isFinite(startTime) || startTime < ctx.currentTime + 0.05) throw new Error("audio start time is too close or already passed");
+      this.stop();
+      const node = new root.AudioWorkletNode(ctx, "entrainment-timeline", {
+        numberOfInputs: 0,
+        numberOfOutputs: 1,
+        outputChannelCount: [2],
+        processorOptions: { audio, startTime },
+      });
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(1, ctx.currentTime);
+      node.connect(gain);
+      gain.connect(ctx.destination);
+      this.timelineNode = node;
+      this.timelineGain = gain;
+      return startTime;
     }
 
     createChannel(side, params) {
@@ -132,10 +179,7 @@
         channel.carrierHz = next.carrierHz;
         channel.osc.frequency.setValueAtTime(next.carrierHz, this.ctx.currentTime);
       }
-      if (params.pulseHz !== undefined && next.pulseHz !== channel.pulseHz) {
-        reset = (next.pulseHz === 0) !== (channel.pulseHz === 0);
-        channel.pulseHz = next.pulseHz;
-      }
+      if (params.pulseHz !== undefined && next.pulseHz !== channel.pulseHz) { channel.pulseHz = next.pulseHz; reset = true; }
       if (params.duty !== undefined) channel.duty = next.duty;
       if (params.phaseDeg !== undefined && next.phaseDeg !== channel.phaseDeg) { channel.phaseDeg = next.phaseDeg; reset = true; }
       if (params.volume !== undefined && next.volume !== channel.volume) {
@@ -188,6 +232,8 @@
       const channels = Object.values(this.channels).filter(Boolean);
       const merger = this.merger;
       const master = this.master;
+      const timelineNode = this.timelineNode;
+      const timelineGain = this.timelineGain;
       if (this.ctx) {
         const now = this.ctx.currentTime;
         for (const channel of channels) {
@@ -195,17 +241,25 @@
           channel.gate.gain.setTargetAtTime(0, now, 0.012);
           try { channel.osc.stop(now + 0.05); } catch {}
         }
+        if (timelineGain) {
+          timelineGain.gain.cancelScheduledValues(now);
+          timelineGain.gain.setTargetAtTime(0, now, 0.008);
+        }
       }
       root.setTimeout?.(() => {
         try {
           for (const channel of channels) { channel.osc.disconnect(); channel.gate.disconnect(); channel.level.disconnect(); }
           merger?.disconnect();
           master?.disconnect();
+          timelineNode?.disconnect();
+          timelineGain?.disconnect();
         } catch {}
       }, 90);
       this.channels = { left: null, right: null };
       this.merger = null;
       this.master = null;
+      this.timelineNode = null;
+      this.timelineGain = null;
     }
   }
 

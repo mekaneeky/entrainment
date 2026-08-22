@@ -39,6 +39,7 @@
             <div><span>01</span><p>Use headphones at a comfortable, quiet starting volume.</p></div>
             <div><span>02</span><p>Never listen while driving or doing anything that needs your attention.</p></div>
             <div><span>03</span><p>Stop immediately if you feel unwell. This tool does not diagnose or treat conditions.</p></div>
+            <div><span>04</span><p>Flashing light can trigger seizures in susceptible people. Do not use visual sessions if you have photosensitive epilepsy, unexplained seizures, or have been advised to avoid flashing light.</p></div>
           </div>
           <button class="primary bottom-action" type="button" data-nav="setup">I understand</button>
         </section>
@@ -134,24 +135,43 @@
           <div class="profile-readout">
             <div><strong id="profile-name">Loading profile…</strong><span id="profile-duration" class="data"></span></div>
             <p id="profile-description" class="quiet"></p>
+            <div id="profile-outputs" class="output-badges" aria-label="Session outputs"></div>
           </div>
-          <label for="volume">Signal level <output id="volume-output" for="volume">50%</output></label>
-          <input id="volume" type="range" min="10" max="100" value="50" />
-          <p class="quiet">Begin with your phone’s headphone volume low and raise it gently.</p>
+          <div id="audio-level-controls">
+            <label for="volume">Audio level <output id="volume-output" for="volume">50%</output></label>
+            <input id="volume" type="range" min="10" max="100" value="50" />
+            <p class="quiet">Begin with your phone’s headphone volume low and raise it gently.</p>
+          </div>
+          <section id="visual-option" class="equipment-option" hidden aria-labelledby="visual-option-title">
+            <div><strong id="visual-option-title">Visual goggles</strong><span id="visual-requirement" class="data"></span></div>
+            <label class="check-row" for="use-visual"><input id="use-visual" type="checkbox" /> <span>Use the visual signal in this session</span></label>
+            <p id="visual-option-copy" class="quiet"></p>
+          </section>
           <details class="file-tools">
             <summary>Use a custom session file</summary>
             <input id="profile-file" type="file" accept="application/json,.json" hidden />
             <button id="import-profile" class="secondary" type="button">Import profile JSON</button>
           </details>
-          <button class="primary" type="button" data-nav="prepare">Continue to headphones</button>
+          <button id="continue-prepare" class="primary" type="button" data-nav="prepare">Continue to equipment</button>
         </section>
 
         <section class="screen immersive prepare-screen" data-screen="prepare" hidden aria-labelledby="prepare-title">
           <button class="back dark" type="button" data-back>← <span>Back</span></button>
           <p class="eyebrow">Cross the threshold</p>
           <h1 id="prepare-title">Make a little room.</h1>
-          <p class="lead">Connect headphones, settle somewhere safe, then place your phone down.</p>
-          <ol class="prepare-list">
+          <p id="prepare-lead" class="lead">Connect headphones, settle somewhere safe, then place your phone down.</p>
+          <section id="goggles-panel" class="goggles-panel" hidden aria-labelledby="goggles-title">
+            <div class="device-heading"><div><small id="goggles-kind">Optional equipment</small><strong id="goggles-title">Visual goggles</strong></div><span id="goggles-state" class="device-state">Not connected</span></div>
+            <p id="goggles-detail" class="quiet">Pair the goggles before putting them on.</p>
+            <button id="connect-goggles" class="secondary dark-control" type="button">Connect goggles</button>
+            <button id="test-goggles" class="secondary dark-control" type="button" hidden>Test dim light</button>
+            <div class="visual-warning">
+              <strong>Before visual stimulation</strong>
+              <p>Keep the goggles off your face during the test. Stop if you feel discomfort, dizziness, nausea, unusual vision, or any warning symptom.</p>
+              <label class="check-row" for="visual-confirm"><input id="visual-confirm" type="checkbox" /> <span>I understand the flashing-light warning and can stop immediately.</span></label>
+            </div>
+          </section>
+          <ol id="prepare-list" class="prepare-list">
             <li><span>01</span><p>Keep this screen awake during the session</p></li>
             <li><span>02</span><p>Use a comfortable, quiet starting volume</p></li>
             <li><span>03</span><p>You can end the session with one tap</p></li>
@@ -167,6 +187,7 @@
           <div class="listening-thread" aria-hidden="true"><svg viewBox="0 0 340 150"><path d="M5 80 C42 10 79 143 120 66 S197 15 239 92 S294 136 335 48"/></svg></div>
           <div class="session-clock"><strong id="session-clock">00:00</strong><span>remaining</span></div>
           <p id="audio-status" class="status" role="status">Keep this screen awake. You may place the phone down.</p>
+          <p id="visual-status" class="status visual-session-status" role="status" hidden>Goggles synchronized.</p>
           <button id="resume-audio" class="secondary dark-control" type="button" hidden>Resume audio</button>
           <button id="end-session" class="secondary dark-control" type="button">End session</button>
         </section>
@@ -240,6 +261,21 @@
               <p class="quiet install-note">Install from your browser menu. On iPhone, use Share → Add to Home Screen.</p>
             </div>
           </details>
+          <details id="lab-tools" class="data-tools lab-tools" hidden>
+            <summary><span><small>Hardware lab</small><strong>Flash phase calibration</strong></span><span aria-hidden="true">⌄</span></summary>
+            <div class="data-tools-body">
+              <p class="quiet">Compensates how far the goggle flashes lag the session clock. The camera watches the LEDs flash a short test pattern and measures the gap. Overkill for most setups.</p>
+              <p class="lab-readout">Current offset <strong id="lab-current">0 ms</strong></p>
+              <video id="lab-video" class="lab-preview" playsinline muted autoplay hidden></video>
+              <button id="lab-connect" class="secondary" type="button">Connect goggles</button>
+              <button id="lab-measure" class="secondary" type="button">Measure with camera</button>
+              <p id="lab-status" class="status" role="status"></p>
+              <label for="lab-latency-input">Manual offset (ms)</label>
+              <input id="lab-latency-input" type="number" min="0" max="250" step="1" inputmode="numeric" />
+              <button id="lab-save" class="text-button" type="button">Save manual offset</button>
+              <button id="lab-reset" class="text-button" type="button">Reset to 0 ms</button>
+            </div>
+          </details>
         </section>
       </main>
 
@@ -252,6 +288,7 @@
     </div>
 
     <script src="./isochronic.js"></script>
+    <script src="./goggles.js"></script>
     <script src="./core.js"></script>
     <script src="./app.js"></script>
   </body>

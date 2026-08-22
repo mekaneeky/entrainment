@@ -108,6 +108,26 @@ async function main() {
   await screen(win, "plan");
   assert((await run(win, `[...document.querySelector('#profile-select').options].some((option) => option.value === 'example-cycle')`)), "Built-in profiles were not loaded");
   await capture(win, "plan.png");
+  const visualProfileSource = fs.readFileSync(path.join(__dirname, "profile.visual.example.json"), "utf8");
+  await run(win, `
+    (() => {
+      const input = document.querySelector('#profile-file');
+      Object.defineProperty(input, 'files', { configurable: true, value: [new File([${JSON.stringify(visualProfileSource)}], 'visual.json', { type: 'application/json' })] });
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    })();
+  `);
+  await wait(100);
+  assert((await run(win, `document.querySelector('#profile-select').value`)) === "development-av-sync-check", "Visual profile was not imported");
+  await click(win, "#use-visual");
+  assert(await run(win, `!document.querySelector('#visual-option').hidden && document.querySelector('#profile-outputs').textContent.includes('Visual')`), "Plan must expose optional visual output");
+  await capture(win, "plan-visual.png");
+  await run(win, `(() => { const g = window.__listeningRoom.goggles; g.device = { gatt: { connected: true } }; g.control = {}; g.events = {}; g.info = { firmware: '1.0.0', deviceId: 'test0001', developmentOutput: true }; g.state = 'ready'; })()`);
+  await click(win, '[data-screen="plan"] [data-nav="prepare"]');
+  await screen(win, "prepare");
+  assert(await run(win, `!document.querySelector('#goggles-panel').hidden && document.querySelector('#start-session').disabled`), "Prepare must show goggles and block Start until the warning is confirmed");
+  await capture(win, "prepare-visual.png");
+  await click(win, '[data-screen="prepare"] [data-back]');
+  await screen(win, "plan");
   await run(win, `
     (() => {
       const custom = {
@@ -132,7 +152,7 @@ async function main() {
 
   await click(win, "#start-session");
   await screen(win, "listening");
-  assert(await run(win, `(() => { const tone = window.__listeningRoom.runner.tone; return Boolean(tone.ctx && tone.merger && tone.channels.left.osc && tone.channels.right.osc && tone.channels.left.gate && tone.channels.right.gate && tone.channels.left.carrierHz === 210 && tone.channels.right.carrierHz === 240 && tone.channels.right.phaseDeg === 180 && tone.channels.right.startDelaySec === 0.2); })()`), "Independent left/right Web Audio graph or delayed phase schedule was not created");
+  assert(await run(win, `(() => { const app = window.__listeningRoom; const tone = app.runner.tone; const audio = app.runner.active?.profile.audio; return Boolean(tone.ctx && tone.timelineNode && tone.timelineGain && audio?.channels.left.segments[0].carrierHz === 210 && audio?.channels.right.segments[0].carrierHz === 240 && audio?.channels.right.phaseDeg === 180 && audio?.channels.right.delaySec === 0.2); })()`), "Independent left/right AudioWorklet timeline or shared start schedule was not created");
   assert(await run(win, `document.querySelector('#listening-title').getBoundingClientRect().bottom <= document.querySelector('.signal-method').getBoundingClientRect().top`), "Session name and method label must not overlap");
   await capture(win, "listening.png");
   await click(win, "#end-session");
@@ -179,6 +199,19 @@ async function main() {
   assert((await run(win, `scrollY`)) === 0, "Session history must open at the top");
   assert(await run(win, `(() => { const box = document.querySelector('[data-screen="sessions"] .screen-heading').getBoundingClientRect(); return scrollX === 0 && box.left >= 20 && box.top >= 20 && document.documentElement.scrollWidth === innerWidth; })()`), "Session history must not clip or scroll sideways");
   await capture(win, "sessions.png");
+
+  assert(await run(win, `(() => {
+    const pill = document.querySelector('[data-screen="sessions"] .local-pill');
+    for (let index = 0; index < 5; index += 1) pill.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    return !document.querySelector('#lab-tools').hidden;
+  })()`), "Five taps on the private pill must unlock the hidden hardware lab");
+  await run(win, `document.querySelector('#lab-latency-input').value = '18'`);
+  await click(win, "#lab-save");
+  assert((await run(win, `window.__listeningRoom.goggles.flashLatencyMs`)) === 18, "Manual flash offset was not applied to the goggles controller");
+  assert(await run(win, `localStorage.getItem('entrainment.flashLatencyMs') === '18' && document.querySelector('#lab-current').textContent === '18 ms'`), "Flash offset was not persisted or shown");
+  await win.reload();
+  await wait(500);
+  assert(await run(win, `window.__listeningRoom.goggles.flashLatencyMs === 18 && !document.querySelector('#lab-tools').hidden`), "Flash offset and lab unlock did not survive a reload");
 
   for (const width of [320, 430]) {
     win.setSize(width, 844);

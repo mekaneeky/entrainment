@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "listening-room-";
-const CACHE = `${CACHE_PREFIX}v8`;
+const CACHE = `${CACHE_PREFIX}v9`;
 const PROFILE_INDEX = "./protocols/index.json";
 const SHELL = [
   "./index.html",
@@ -7,6 +7,8 @@ const SHELL = [
   "./app.js",
   "./core.js",
   "./isochronic.js",
+  "./isochronic-worklet.js",
+  "./goggles.js",
   PROFILE_INDEX,
   "./app.webmanifest",
   "./icon.svg",

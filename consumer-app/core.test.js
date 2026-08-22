@@ -6,8 +6,11 @@ const {
   SessionRunner,
   atTime,
   parseProfileFile,
+  selectOutputs,
   totalDuration,
+  validateBackup,
   validateProfile,
+  visualAtTime,
 } = require("./core");
 
 const profile = validateProfile({
@@ -36,9 +39,15 @@ const profile = validateProfile({
 });
 
 assert.equal(parseProfileFile(JSON.stringify(profile)).method, "hemispheric");
-assert.equal(parseProfileFile(fs.readFileSync(`${__dirname}/profile.example.json`, "utf8")).version, 1);
+assert.equal(profile.version, 2);
+assert.equal(profile.requiredOutputs[0], "audio");
+assert.equal(parseProfileFile(fs.readFileSync(`${__dirname}/profile.example.json`, "utf8")).version, 2);
+const visualProfile = parseProfileFile(fs.readFileSync(`${__dirname}/profile.visual.example.json`, "utf8"));
+assert.deepEqual(selectOutputs(visualProfile), ["audio"]);
+assert.deepEqual(selectOutputs(visualProfile, { visual: true }), ["audio", "visual"]);
+assert.equal(visualAtTime(visualProfile, 0).right.phaseDeg, 180);
 for (const file of JSON.parse(fs.readFileSync(`${__dirname}/protocols/index.json`, "utf8"))) {
-  assert.equal(parseProfileFile(fs.readFileSync(path.resolve(__dirname, file), "utf8")).version, 1);
+  assert.equal(parseProfileFile(fs.readFileSync(path.resolve(__dirname, file), "utf8")).version, 2);
 }
 assert.equal(totalDuration(profile), 7);
 assert.equal(atTime(profile, 0).right.active, false);
@@ -47,8 +56,11 @@ assert.equal(atTime(profile, 4.5).left.pulseHz, 0);
 assert.throws(() => parseProfileFile(JSON.stringify({ ...profile, server: "https://example.com" })), /server is not supported/);
 assert.throws(() => validateProfile({
   ...profile,
-  channels: { ...profile.channels, left: { segments: [{ durationSec: 2, carrierHz: 200, pulseHz: 0, pulseHzEnd: 10 }] } },
+  audio: { ...profile.audio, channels: { ...profile.audio.channels, left: { segments: [{ durationSec: 2, carrierHz: 200, pulseHz: 0, pulseHzEnd: 10 }] } } },
 }), /cannot ramp between continuous and pulsed/);
+assert.throws(() => validateProfile({ ...visualProfile, requiredOutputs: ["eeg"] }), /unsupported output/);
+assert.throws(() => validateProfile({ ...visualProfile, visual: { channels: { ...visualProfile.visual.channels, left: { ...visualProfile.visual.channels.left, segments: [{ durationSec: 30, pulseHz: 10 }] } } } }), /intensity/);
+assert.equal(validateBackup({ format: "entrainment-backup", version: 1, goals: [], profiles: [], sessions: [] }).version, 2);
 
 class MemoryStorage {
   getItem(key) { return this[key] ?? null; }
@@ -102,26 +114,26 @@ let scheduledTick;
 let ended;
 const calls = [];
 const tone = {
-  ctx: { currentTime: 10, state: "running", resume: async () => {} },
-  async start(settings) { calls.push(["start", settings]); },
-  setChannel(side, settings) { calls.push([side, settings]); },
+  ctx: { currentTime: 10, state: "running", resume: async () => {}, addEventListener() {}, removeEventListener() {} },
+  async prepareTimeline() { calls.push(["prepare"]); },
+  contextTimeForPerformance(ms) { return 10 + ms / 1000; },
+  async startTimeline(settings, startTime) { calls.push(["timeline", settings, startTime]); },
   stop() { calls.push(["stop"]); },
 };
 
 (async () => {
   const runner = new SessionRunner(tone, {
+    performance: { now() { return 0; } },
     setInterval(callback) { scheduledTick = callback; return 1; },
     clearInterval() {},
   });
   await runner.start(profile, { onEnd: (result) => { ended = result; } });
-  assert.equal(calls[0][1].right.volume, 0);
-  tone.ctx.currentTime = 11.5;
+  assert.equal(calls[1][0], "timeline");
+  assert.equal(calls[1][1].channels.right.phaseDeg, 180);
+  assert.equal(calls[1][2], 10.18);
+  tone.ctx.currentTime = 11.68;
   scheduledTick();
-  assert.ok(calls.some(([side, settings]) => side === "right" && settings.volume === 1));
-  tone.ctx.currentTime = 14.5;
-  scheduledTick();
-  assert.ok(calls.some(([side, settings]) => side === "left" && settings.pulseHz === 0));
-  tone.ctx.currentTime = 17;
+  tone.ctx.currentTime = 17.18;
   scheduledTick();
   assert.equal(ended.status, "completed");
   assert.equal(calls.at(-1)[0], "stop");

@@ -3,7 +3,9 @@
 
   const PROFILE_FORMAT = "entrainment-profile";
   const BACKUP_FORMAT = "entrainment-backup";
-  const BACKUP_VERSION = 1;
+  const PROFILE_VERSION = 2;
+  const BACKUP_VERSION = 2;
+  const OUTPUTS = ["audio", "visual"];
   const STORE_KEY = "entrainment.consumer";
   const ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,79}$/;
   const MAX_PROFILE_BYTES = 256 * 1024;
@@ -58,10 +60,10 @@
     return result;
   }
 
-  function validateSegment(input, index, side) {
-    const path = `profile.channels.${side}.segments[${index}]`;
+  function validateAudioSegment(input, index, side, pathPrefix = "profile.audio.channels") {
+    const path = `${pathPrefix}.${side}.segments[${index}]`;
     object(input, path);
-    knownKeys(input, ["durationSec", "carrierHz", "carrierHzEnd", "pulseHz", "pulseHzEnd", "duty", "dutyEnd", "volume", "volumeEnd", "phaseDeg"], path);
+    knownKeys(input, ["durationSec", "carrierHz", "carrierHzEnd", "pulseHz", "pulseHzEnd", "duty", "dutyEnd", "volume", "volumeEnd", "resetPhaseDeg"], path);
     const carrierHz = number(input.carrierHz, `${path}.carrierHz`, 40, 1200);
     const pulseHz = pulseNumber(input.pulseHz, `${path}.pulseHz`);
     const pulseHzEnd = pulseNumber(input.pulseHzEnd ?? pulseHz, `${path}.pulseHzEnd`);
@@ -78,45 +80,161 @@
       dutyEnd: number(input.dutyEnd ?? duty, `${path}.dutyEnd`, 0.05, 0.95),
       volume,
       volumeEnd: number(input.volumeEnd ?? volume, `${path}.volumeEnd`, 0, 1),
-      phaseDeg: number(input.phaseDeg ?? 0, `${path}.phaseDeg`, 0, 360),
+      ...(input.resetPhaseDeg === undefined ? {} : { resetPhaseDeg: number(input.resetPhaseDeg, `${path}.resetPhaseDeg`, 0, 360) }),
     };
   }
 
-  function validateChannel(input, side) {
-    const path = `profile.channels.${side}`;
+  function validateVisualSegment(input, index, side) {
+    const path = `profile.visual.channels.${side}.segments[${index}]`;
     object(input, path);
-    knownKeys(input, ["delaySec", "segments"], path);
+    knownKeys(input, ["durationSec", "pulseHz", "pulseHzEnd", "duty", "dutyEnd", "intensity", "intensityEnd"], path);
+    const pulseHz = pulseNumber(input.pulseHz, `${path}.pulseHz`);
+    const pulseHzEnd = pulseNumber(input.pulseHzEnd ?? pulseHz, `${path}.pulseHzEnd`);
+    if ((pulseHz === 0) !== (pulseHzEnd === 0)) fail(`${path} cannot ramp between dark and flashing; use adjacent segments`);
+    const duty = number(input.duty ?? 0.5, `${path}.duty`, 0.05, 0.95);
+    const intensity = number(input.intensity, `${path}.intensity`, 0, 1);
+    return {
+      durationSec: number(input.durationSec, `${path}.durationSec`, 1, 7200),
+      pulseHz,
+      pulseHzEnd,
+      duty,
+      dutyEnd: number(input.dutyEnd ?? duty, `${path}.dutyEnd`, 0.05, 0.95),
+      intensity,
+      intensityEnd: number(input.intensityEnd ?? intensity, `${path}.intensityEnd`, 0, 1),
+    };
+  }
+
+  function validateChannel(input, side, kind, durationSec) {
+    const path = `profile.${kind}.channels.${side}`;
+    object(input, path);
+    knownKeys(input, ["delaySec", "phaseDeg", "segments"], path);
     if (!Array.isArray(input.segments) || input.segments.length < 1 || input.segments.length > 128) {
       fail(`${path}.segments must contain 1-128 segments`);
     }
     const delaySec = number(input.delaySec ?? 0, `${path}.delaySec`, 0, 10800);
-    const segments = input.segments.map((segment, index) => validateSegment(segment, index, side));
-    if (delaySec + segments.reduce((sum, segment) => sum + segment.durationSec, 0) > 10800) {
-      fail(`${path} may not exceed 3 hours including its delay`);
+    const phaseDeg = number(input.phaseDeg ?? 0, `${path}.phaseDeg`, 0, 360);
+    const validate = kind === "audio" ? validateAudioSegment : validateVisualSegment;
+    const segments = input.segments.map((segment, index) => validate(segment, index, side));
+    if (delaySec + segments.reduce((sum, segment) => sum + segment.durationSec, 0) > durationSec) {
+      fail(`${path} may not exceed profile.durationSec including its delay`);
     }
-    return { delaySec, segments };
+    return { delaySec, phaseDeg, segments };
   }
 
-  function validateProfile(input) {
-    object(input, "profile");
-    knownKeys(input, ["format", "version", "method", "id", "name", "description", "masterVolume", "rampSec", "channels"], "profile");
-    if (input.format !== PROFILE_FORMAT) fail(`profile.format must be ${PROFILE_FORMAT}`);
-    if (input.version !== 1) fail("profile.version must be 1");
-    if (input.method !== "hemispheric") fail("profile.method must be hemispheric");
-    object(input.channels, "profile.channels");
-    knownKeys(input.channels, ["left", "right"], "profile.channels");
-    if (!input.channels.left || !input.channels.right) fail("profile.channels must contain left and right");
+  function validateChannels(input, kind, durationSec) {
+    object(input, `profile.${kind}.channels`);
+    knownKeys(input, ["left", "right"], `profile.${kind}.channels`);
+    if (!input.left || !input.right) fail(`profile.${kind}.channels must contain left and right`);
     return {
+      left: validateChannel(input.left, "left", kind, durationSec),
+      right: validateChannel(input.right, "right", kind, durationSec),
+    };
+  }
+
+  function validateAudio(input, durationSec) {
+    object(input, "profile.audio");
+    knownKeys(input, ["masterVolume", "rampSec", "channels"], "profile.audio");
+    return {
+      masterVolume: number(input.masterVolume ?? 0.12, "profile.audio.masterVolume", 0, 0.8),
+      rampSec: number(input.rampSec ?? 0.01, "profile.audio.rampSec", 0.001, 0.03),
+      channels: validateChannels(input.channels, "audio", durationSec),
+    };
+  }
+
+  function validateVisual(input, durationSec) {
+    object(input, "profile.visual");
+    knownKeys(input, ["channels"], "profile.visual");
+    return { channels: validateChannels(input.channels, "visual", durationSec) };
+  }
+
+  function validateRequiredOutputs(input, described) {
+    if (!Array.isArray(input)) fail("profile.requiredOutputs must be an array");
+    const result = input.map((value, index) => string(value, `profile.requiredOutputs[${index}]`, { min: 1, max: 20 }));
+    if (new Set(result).size !== result.length) fail("profile.requiredOutputs must not contain duplicates");
+    for (const output of result) {
+      if (!OUTPUTS.includes(output)) fail(`profile.requiredOutputs contains unsupported output ${output}`);
+      if (!described.includes(output)) fail(`profile.requiredOutputs cannot require missing profile.${output}`);
+    }
+    return result;
+  }
+
+  function validateProfileV2(input) {
+    object(input, "profile");
+    knownKeys(input, ["format", "version", "method", "id", "name", "description", "durationSec", "requiredOutputs", "audio", "visual"], "profile");
+    if (input.format !== PROFILE_FORMAT) fail(`profile.format must be ${PROFILE_FORMAT}`);
+    if (input.version !== PROFILE_VERSION) fail(`profile.version must be ${PROFILE_VERSION}`);
+    if (input.method !== "hemispheric") fail("profile.method must be hemispheric");
+    const durationSec = number(input.durationSec, "profile.durationSec", 1, 10800);
+    const described = OUTPUTS.filter((output) => input[output] !== undefined);
+    if (!described.length) fail("profile must describe audio, visual, or both");
+    const profile = {
       format: PROFILE_FORMAT,
-      version: 1,
+      version: PROFILE_VERSION,
       method: "hemispheric",
       id: id(input.id, "profile.id"),
       name: string(input.name, "profile.name", { min: 1, max: 80 }),
       description: string(input.description ?? "", "profile.description", { max: 500 }),
-      masterVolume: number(input.masterVolume ?? 0.12, "profile.masterVolume", 0, 0.8),
-      rampSec: number(input.rampSec ?? 0.01, "profile.rampSec", 0.001, 0.03),
-      channels: { left: validateChannel(input.channels.left, "left"), right: validateChannel(input.channels.right, "right") },
+      durationSec,
+      requiredOutputs: validateRequiredOutputs(input.requiredOutputs ?? [], described),
     };
+    if (input.audio !== undefined) profile.audio = validateAudio(input.audio, durationSec);
+    if (input.visual !== undefined) profile.visual = validateVisual(input.visual, durationSec);
+    return profile;
+  }
+
+  function validateLegacyProfile(input) {
+    object(input, "profile");
+    knownKeys(input, ["format", "version", "method", "id", "name", "description", "masterVolume", "rampSec", "channels"], "profile");
+    if (input.format !== PROFILE_FORMAT) fail(`profile.format must be ${PROFILE_FORMAT}`);
+    if (input.version !== 1) fail("profile.version must be 1 or 2");
+    if (input.method !== "hemispheric") fail("profile.method must be hemispheric");
+    object(input.channels, "profile.channels");
+    knownKeys(input.channels, ["left", "right"], "profile.channels");
+    if (!input.channels.left || !input.channels.right) fail("profile.channels must contain left and right");
+
+    function migrateLegacyChannel(channel, side) {
+      const path = `profile.channels.${side}`;
+      object(channel, path);
+      knownKeys(channel, ["delaySec", "segments"], path);
+      if (!Array.isArray(channel.segments) || channel.segments.length < 1 || channel.segments.length > 128) fail(`${path}.segments must contain 1-128 segments`);
+      const legacy = channel.segments.map((segment, index) => {
+        object(segment, `${path}.segments[${index}]`);
+        knownKeys(segment, ["durationSec", "carrierHz", "carrierHzEnd", "pulseHz", "pulseHzEnd", "duty", "dutyEnd", "volume", "volumeEnd", "phaseDeg"], `${path}.segments[${index}]`);
+        const { phaseDeg: _legacyPhase, ...audioSegment } = segment;
+        const clean = validateAudioSegment(audioSegment, index, side, "profile.channels");
+        return { clean, phaseDeg: number(segment.phaseDeg ?? 0, `${path}.segments[${index}].phaseDeg`, 0, 360) };
+      });
+      const initialPhase = legacy[0].phaseDeg;
+      return {
+        delaySec: number(channel.delaySec ?? 0, `${path}.delaySec`, 0, 10800),
+        phaseDeg: initialPhase,
+        segments: legacy.map(({ clean, phaseDeg }, index) => (
+          index > 0 && phaseDeg !== legacy[index - 1].phaseDeg ? { ...clean, resetPhaseDeg: phaseDeg } : clean
+        )),
+      };
+    }
+
+    const channels = {
+      left: migrateLegacyChannel(input.channels.left, "left"),
+      right: migrateLegacyChannel(input.channels.right, "right"),
+    };
+    const durationSec = Math.max(...Object.values(channels).map((channel) => channel.delaySec + channel.segments.reduce((sum, segment) => sum + segment.durationSec, 0)));
+    return validateProfileV2({
+      format: PROFILE_FORMAT,
+      version: PROFILE_VERSION,
+      method: "hemispheric",
+      id: input.id,
+      name: input.name,
+      description: input.description,
+      durationSec,
+      requiredOutputs: ["audio"],
+      audio: { masterVolume: input.masterVolume, rampSec: input.rampSec, channels },
+    });
+  }
+
+  function validateProfile(input) {
+    if (input?.version === 1) return validateLegacyProfile(input);
+    return validateProfileV2(input);
   }
 
   function parseJsonFile(source, expectedFormat, maxBytes) {
@@ -173,13 +291,18 @@
 
   function validateSession(input, goals, profiles) {
     object(input, "session");
-    knownKeys(input, ["id", "profileId", "startedAt", "endedAt", "status", "before", "after", "note", "beforeNote", "afterNote"], "session");
+    knownKeys(input, ["id", "profileId", "startedAt", "endedAt", "status", "before", "after", "note", "beforeNote", "afterNote", "outputsUsed"], "session");
     const profileId = id(input.profileId, "session.profileId");
     if (!profiles.has(profileId)) fail("session.profileId refers to an unknown profile");
     const startedAt = isoDate(input.startedAt, "session.startedAt");
     const endedAt = isoDate(input.endedAt, "session.endedAt");
     if (Date.parse(endedAt) < Date.parse(startedAt)) fail("session.endedAt cannot precede session.startedAt");
     if (!["completed", "stopped"].includes(input.status)) fail("session.status must be completed or stopped");
+    if (!Array.isArray(input.outputsUsed ?? ["audio"])) fail("session.outputsUsed must be an array");
+    const outputsUsed = (input.outputsUsed ?? ["audio"]).map((output, index) => string(output, `session.outputsUsed[${index}]`, { min: 1, max: 20 }));
+    if (!outputsUsed.length || new Set(outputsUsed).size !== outputsUsed.length || outputsUsed.some((output) => !OUTPUTS.includes(output))) {
+      fail("session.outputsUsed must contain unique audio and/or visual values");
+    }
     return {
       id: id(input.id, "session.id"),
       profileId,
@@ -191,6 +314,7 @@
       note: string(input.note ?? "", "session.note", { max: 2000 }),
       beforeNote: string(input.beforeNote ?? "", "session.beforeNote", { max: 2000 }),
       afterNote: string(input.afterNote ?? "", "session.afterNote", { max: 2000 }),
+      outputsUsed,
     };
   }
 
@@ -203,7 +327,7 @@
     knownKeys(input, ["format", "version", "goals", "profiles", "sessions"], "backup");
     if (input.format !== BACKUP_FORMAT) fail(`backup.format must be ${BACKUP_FORMAT}`);
     // ponytail: version 1 only; add a migration when version 2 actually exists.
-    if (input.version !== BACKUP_VERSION) fail(`backup.version must be ${BACKUP_VERSION}`);
+    if (input.version !== 1 && input.version !== BACKUP_VERSION) fail(`backup.version must be 1 or ${BACKUP_VERSION}`);
     if (![input.goals, input.profiles, input.sessions].every(Array.isArray)) fail("backup collections must be arrays");
     const goals = input.goals.map(validateGoal);
     const profiles = input.profiles.map(validateProfile);
@@ -313,135 +437,205 @@
   }
 
   function totalDuration(profile) {
-    return Math.max(...Object.values(profile.channels).map((channel) => (
-      channel.delaySec + channel.segments.reduce((sum, segment) => sum + segment.durationSec, 0)
-    )));
+    return validateProfile(profile).durationSec;
   }
 
-  function channelAtTime(channel, elapsedSec) {
+  function channelAtTime(channel, elapsedSec, kind = "audio") {
     const localTime = elapsedSec - channel.delaySec;
     const first = channel.segments[0];
-    if (localTime < 0) return { index: -1, fraction: 0, active: false, carrierHz: first.carrierHz, pulseHz: first.pulseHz, duty: first.duty, volume: 0, phaseDeg: first.phaseDeg };
+    const initial = kind === "audio"
+      ? { carrierHz: first.carrierHz, pulseHz: first.pulseHz, duty: first.duty, volume: 0, phaseDeg: channel.phaseDeg }
+      : { pulseHz: first.pulseHz, duty: first.duty, intensity: 0, phaseDeg: channel.phaseDeg };
+    if (localTime < 0) return { index: -1, fraction: 0, active: false, ...initial };
+    let phaseDeg = channel.phaseDeg;
     let offset = 0;
     for (let index = 0; index < channel.segments.length; index += 1) {
       const segment = channel.segments[index];
+      if (segment.resetPhaseDeg !== undefined) phaseDeg = segment.resetPhaseDeg;
       if (localTime < offset + segment.durationSec) {
         const fraction = Math.max(0, Math.min(1, (localTime - offset) / segment.durationSec));
-        return {
+        const common = {
           index,
           fraction,
           active: true,
-          carrierHz: segment.carrierHz + (segment.carrierHzEnd - segment.carrierHz) * fraction,
           pulseHz: segment.pulseHz + (segment.pulseHzEnd - segment.pulseHz) * fraction,
           duty: segment.duty + (segment.dutyEnd - segment.duty) * fraction,
-          volume: segment.volume + (segment.volumeEnd - segment.volume) * fraction,
-          phaseDeg: segment.phaseDeg,
+          phaseDeg,
         };
+        return kind === "audio"
+          ? { ...common, carrierHz: segment.carrierHz + (segment.carrierHzEnd - segment.carrierHz) * fraction, volume: segment.volume + (segment.volumeEnd - segment.volume) * fraction }
+          : { ...common, intensity: segment.intensity + (segment.intensityEnd - segment.intensity) * fraction };
       }
       offset += segment.durationSec;
     }
     const last = channel.segments.at(-1);
-    return { index: channel.segments.length, fraction: 1, active: false, carrierHz: last.carrierHzEnd, pulseHz: last.pulseHzEnd, duty: last.dutyEnd, volume: 0, phaseDeg: last.phaseDeg };
+    return kind === "audio"
+      ? { index: channel.segments.length, fraction: 1, active: false, carrierHz: last.carrierHzEnd, pulseHz: last.pulseHzEnd, duty: last.dutyEnd, volume: 0, phaseDeg }
+      : { index: channel.segments.length, fraction: 1, active: false, pulseHz: last.pulseHzEnd, duty: last.dutyEnd, intensity: 0, phaseDeg };
   }
 
   function atTime(profile, elapsedSec) {
+    const clean = validateProfile(profile);
+    if (!clean.audio) return { left: null, right: null };
     return {
-      left: channelAtTime(profile.channels.left, elapsedSec),
-      right: channelAtTime(profile.channels.right, elapsedSec),
+      left: channelAtTime(clean.audio.channels.left, elapsedSec, "audio"),
+      right: channelAtTime(clean.audio.channels.right, elapsedSec, "audio"),
     };
   }
 
+  function visualAtTime(profile, elapsedSec) {
+    const clean = validateProfile(profile);
+    if (!clean.visual) return { left: null, right: null };
+    return {
+      left: channelAtTime(clean.visual.channels.left, elapsedSec, "visual"),
+      right: channelAtTime(clean.visual.channels.right, elapsedSec, "visual"),
+    };
+  }
+
+  function selectOutputs(profile, { visual = false } = {}) {
+    const clean = validateProfile(profile);
+    const outputs = [];
+    if (clean.audio) outputs.push("audio");
+    if (clean.visual && visual) outputs.push("visual");
+    const missing = clean.requiredOutputs.filter((output) => !outputs.includes(output));
+    if (missing.length) fail(`session requires ${missing.join(" and ")}`);
+    if (!outputs.length) fail("session has no available output");
+    return outputs;
+  }
+
   class SessionRunner {
-    constructor(tone, timers = root) {
+    constructor(tone, timers = root, visual = null) {
       this.tone = tone ?? (root.IsochronicTone ? new root.IsochronicTone() : null);
-      if (!this.tone) fail("IsochronicTone must be loaded before SessionRunner");
       this.timers = timers;
+      this.visual = visual;
       this.active = null;
       this.starting = false;
+      this.visual?.addEventListener?.("fault", () => {
+        if (this.active?.outputs.includes("visual")) this.stop("device-fault");
+      });
+    }
+
+    nowMs() {
+      return this.timers.performance?.now?.() ?? root.performance?.now?.() ?? Date.now();
     }
 
     async start(input, callbacks = {}) {
       if (this.starting) fail("session is already starting");
       if (this.active) this.stop("replaced");
       const profile = validateProfile(input);
-      const first = atTime(profile, 0);
+      const wantsVisual = callbacks.useVisual === true;
+      const visualReady = wantsVisual && this.visual?.connected === true;
+      const outputs = selectOutputs(profile, { visual: visualReady });
+      if (outputs.includes("audio") && !this.tone) fail("IsochronicTone must be loaded before an audio session");
+
       this.starting = true;
+      let audioStarted = false;
+      let visualArmed = false;
       try {
-        await this.tone.start({
-          left: { ...first.left, startDelaySec: profile.channels.left.delaySec },
-          right: { ...first.right, startDelaySec: profile.channels.right.delaySec },
-          masterVolume: profile.masterVolume,
-          rampSec: profile.rampSec,
-        });
+        if (outputs.includes("audio")) await this.tone.prepareTimeline();
+        if (outputs.includes("visual")) {
+          await this.visual.loadSchedule(profile.visual, profile.durationSec);
+          await this.visual.synchronize();
+        }
+
+        const startPerformanceMs = this.nowMs() + (outputs.includes("visual") ? 2000 : 180);
+        const startAudioSec = outputs.includes("audio") ? this.tone.contextTimeForPerformance(startPerformanceMs) : null;
+        if (outputs.includes("visual")) {
+          await this.visual.arm(startPerformanceMs);
+          visualArmed = true;
+        }
+        if (outputs.includes("audio")) {
+          await this.tone.startTimeline(profile.audio, startAudioSec);
+          audioStarted = true;
+        }
+        if (outputs.includes("visual")) {
+          const referenceElapsedUs = outputs.includes("audio")
+            ? () => ((this.tone.ctx?.currentTime ?? startAudioSec) - startAudioSec) * 1000000
+            : () => (this.nowMs() - startPerformanceMs) * 1000;
+          await this.visual.commit(referenceElapsedUs);
+        }
+
+        const stateHandler = () => this.reportAudioState();
+        this.active = {
+          profile,
+          outputs,
+          callbacks,
+          startPerformanceMs,
+          startAudioSec,
+          lastAudioState: this.tone?.ctx?.state ?? "running",
+          stateHandler,
+          timer: this.timers.setInterval(() => this.tick(), 250),
+        };
+        this.tone?.ctx?.addEventListener?.("statechange", stateHandler);
+        callbacks.onStart?.({ outputs: [...outputs], startPerformanceMs });
+        this.tick();
+        return { profile, outputs: [...outputs] };
+      } catch (error) {
+        if (audioStarted) this.tone.stop();
+        if (visualArmed) this.visual.stop().catch(() => {});
+        throw error;
       } finally {
         this.starting = false;
       }
-      const stateHandler = () => this.reportAudioState();
-      this.active = {
-        profile,
-        callbacks,
-        startedAt: this.tone.ctx?.currentTime ?? 0,
-        lastChannels: { left: { ...first.left }, right: { ...first.right } },
-        lastAudioState: this.tone.ctx?.state ?? "running",
-        stateHandler,
-        timer: this.timers.setInterval(() => this.tick(), 250),
-      };
-      this.tone.ctx?.addEventListener?.("statechange", stateHandler);
-      this.tick();
-      return profile;
     }
 
     reportAudioState() {
-      if (!this.active) return;
+      if (!this.active?.outputs.includes("audio")) return;
       const audioState = this.tone.ctx?.state ?? "running";
       if (audioState === this.active.lastAudioState) return;
       this.active.lastAudioState = audioState;
+      if (audioState !== "running" && this.active.outputs.includes("visual")) {
+        this.stop("audio-interrupted");
+        return;
+      }
       this.active.callbacks.onAudioState?.(audioState);
+    }
+
+    elapsedSec() {
+      if (!this.active) return 0;
+      if (this.active.outputs.length === 1 && this.active.outputs[0] === "audio") {
+        return Math.max(0, (this.tone.ctx?.currentTime ?? this.active.startAudioSec) - this.active.startAudioSec);
+      }
+      return Math.max(0, (this.nowMs() - this.active.startPerformanceMs) / 1000);
     }
 
     tick() {
       if (!this.active) return;
-      const { profile, callbacks } = this.active;
+      const active = this.active;
       this.reportAudioState();
-      const elapsedSec = Math.max(0, (this.tone.ctx?.currentTime ?? 0) - this.active.startedAt);
-      const durationSec = totalDuration(profile);
-      if (elapsedSec >= durationSec) {
-        this.finish("completed", durationSec);
+      if (!this.active) return;
+      const elapsedSec = this.elapsedSec();
+      if (elapsedSec >= active.profile.durationSec) {
+        this.finish("completed", active.profile.durationSec);
         return;
       }
-      const point = atTime(profile, elapsedSec);
-      for (const side of ["left", "right"]) {
-        const next = point[side];
-        const last = this.active.lastChannels[side];
-        const update = {};
-        if (Math.abs(next.carrierHz - last.carrierHz) >= 0.5) update.carrierHz = next.carrierHz;
-        if (Math.abs(next.pulseHz - last.pulseHz) >= 0.05) update.pulseHz = next.pulseHz;
-        if (Math.abs(next.duty - last.duty) >= 0.005) update.duty = next.duty;
-        if (Math.abs(next.volume - last.volume) >= 0.005 || next.active !== last.active) update.volume = next.volume;
-        if (next.phaseDeg !== last.phaseDeg) update.phaseDeg = next.phaseDeg;
-        if (Object.keys(update).length) this.tone.setChannel(side, update);
-        Object.assign(last, update, { active: next.active });
-      }
-      callbacks.onProgress?.({ elapsedSec, durationSec, ...point });
+      active.callbacks.onProgress?.({
+        elapsedSec,
+        durationSec: active.profile.durationSec,
+        audio: active.profile.audio ? atTime(active.profile, elapsedSec) : null,
+        visual: active.profile.visual ? visualAtTime(active.profile, elapsedSec) : null,
+      });
     }
 
     async resumeAudio() {
-      if (this.tone.ctx?.state !== "running") await this.tone.ctx?.resume?.();
+      if (this.active?.outputs.includes("visual")) fail("A visual session must be restarted to restore synchronization");
+      if (this.tone?.ctx?.state !== "running") await this.tone?.ctx?.resume?.();
     }
 
     stop(status = "stopped") {
       if (!this.active) return;
-      const elapsedSec = Math.max(0, (this.tone.ctx?.currentTime ?? 0) - this.active.startedAt);
-      this.finish(status, elapsedSec);
+      this.finish(status, this.elapsedSec());
     }
 
     finish(status, elapsedSec) {
       const active = this.active;
+      if (!active) return;
       this.active = null;
       this.timers.clearInterval(active.timer);
-      this.tone.ctx?.removeEventListener?.("statechange", active.stateHandler);
-      this.tone.stop();
-      active.callbacks.onEnd?.({ status, elapsedSec, durationSec: totalDuration(active.profile) });
+      this.tone?.ctx?.removeEventListener?.("statechange", active.stateHandler);
+      if (active.outputs.includes("audio")) this.tone.stop();
+      if (active.outputs.includes("visual")) this.visual.stop().catch(() => {});
+      active.callbacks.onEnd?.({ status, elapsedSec, durationSec: active.profile.durationSec, outputs: [...active.outputs] });
     }
   }
 
@@ -451,10 +645,12 @@
     atTime,
     emptyBackup,
     parseProfileFile,
+    selectOutputs,
     totalDuration,
     validateBackup,
     validateGoal,
     validateProfile,
+    visualAtTime,
   };
 
   root.EntrainmentCore = api;
