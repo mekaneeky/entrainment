@@ -88,7 +88,7 @@
 
   function quantize(value, scale, max) { return Math.max(0, Math.min(max, Math.round(value * scale))); }
 
-  function serializeVisualSchedule(visual) {
+  function serializeVisualSchedule(visual, intensityScale = 1) {
     const definitions = [];
     for (const [eye, side] of [[0, "left"], [1, "right"]]) {
       const channel = visual.channels[side];
@@ -111,8 +111,8 @@
           data.setUint16(8, quantize(segment.pulseHzEnd, 100, 4500), true);
           data.setUint8(10, quantize(segment.duty, 255, 255));
           data.setUint8(11, quantize(segment.dutyEnd, 255, 255));
-          data.setUint8(12, quantize(segment.intensity, 255, 255));
-          data.setUint8(13, quantize(segment.intensityEnd, 255, 255));
+          data.setUint8(12, quantize(segment.intensity * intensityScale, 255, 255));
+          data.setUint8(13, quantize(segment.intensityEnd * intensityScale, 255, 255));
           data.setUint8(14, 0);
         }),
       }));
@@ -213,7 +213,7 @@
         channels: data.getUint8(10),
         deviceId: data.getUint32(11, true).toString(16).padStart(8, "0"),
       };
-      if (info.maxSegmentsPerEye < 1 || info.channels < 1 || info.maxFrequencyHz < 1) throw new Error("Goggles reported invalid capabilities");
+      if (info.maxSegmentsPerEye < 1 || info.channels < 1 || info.maxFrequencyHz < 1 || info.maxIntensity <= 0 || info.maxIntensity > 1) throw new Error("Goggles reported invalid capabilities");
       info.developmentOutput = Boolean(info.flags & 1);
       return info;
     }
@@ -303,15 +303,15 @@
 
     async loadSchedule(visual, durationSec) {
       if (!this.connected) throw new Error("Connect goggles before loading a visual session");
-      const { definitions, checksum } = serializeVisualSchedule(visual);
       const counts = [visual.channels.left.segments.length, visual.channels.right.segments.length];
       if (counts.some((count) => count > this.info.maxSegmentsPerEye)) throw new Error("Visual session exceeds the goggles segment limit");
       for (const channel of Object.values(visual.channels)) {
         for (const segment of channel.segments) {
           if (Math.max(segment.pulseHz, segment.pulseHzEnd) > this.info.maxFrequencyHz) throw new Error("Visual session exceeds the goggles frequency limit");
-          if (Math.max(segment.intensity, segment.intensityEnd) > this.info.maxIntensity) throw new Error("Visual session exceeds the characterized goggles intensity limit");
+          if (Math.min(segment.intensity, segment.intensityEnd) < 0 || Math.max(segment.intensity, segment.intensityEnd) > 1) throw new Error("Visual intensity must be between 0 and 1");
         }
       }
+      const { definitions, checksum } = serializeVisualSchedule(visual, this.info.maxIntensity);
       this.sessionId = root.crypto.getRandomValues(new Uint32Array(1))[0] || 1;
       this.setState("loading");
       await this.send(OP.LOAD_BEGIN, makePayload((data) => {

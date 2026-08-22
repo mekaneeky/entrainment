@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "listening-room-";
-const CACHE = `${CACHE_PREFIX}v16`;
+const CACHE = `${CACHE_PREFIX}v17`;
 const PROFILE_INDEX = "./protocols/index.json";
 const SHELL = [
   "./index.html",

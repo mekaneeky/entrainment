@@ -242,11 +242,12 @@
       video.hidden = false;
       await video.play();
       status.textContent = "Point the LEDs at the camera in dim light. Keep them in frame for ~10 seconds…";
-      await goggles.loadSchedule(GogglesApi.calibrationVisual(goggles.info?.maxIntensity ?? 1), GogglesApi.CALIBRATION.durationSec + 4);
+      await goggles.loadSchedule(GogglesApi.calibrationVisual(), GogglesApi.CALIBRATION.durationSec + 4);
       await goggles.synchronize();
-      const startAt = performance.now() + 2500;
+      const leadMs = 2500;
+      const startAt = performance.now() + leadMs;
       await goggles.arm(startAt);
-      const finished = sampleCameraFrames(video, 1500 + GogglesApi.CALIBRATION.durationSec * 1000 + 400);
+      const finished = sampleCameraFrames(video, leadMs + GogglesApi.CALIBRATION.durationSec * 1000 + 400);
       await goggles.commit(() => (performance.now() - startAt) * 1000);
       const result = GogglesApi.analyzeFlashLatency(await finished, { startPerformanceMs: startAt });
       applyFlashLatency(result.latencyMs, true);

@@ -47,7 +47,7 @@ const controller = new GogglesController({ bluetooth: null, clock: fakeClock, ti
 const writes = [];
 controller.device = { gatt: { connected: true } };
 controller.events = {};
-controller.info = { maxSegmentsPerEye: 128 };
+controller.info = { maxSegmentsPerEye: 128, maxFrequencyHz: 45, maxIntensity: 0.25 };
 controller.control = {
   async writeValueWithResponse(bytes) {
     writes.push(bytes.slice());
@@ -141,9 +141,11 @@ controller.control = {
   assert.throws(() => labController.setFlashLatency(251), /0-250/);
 
   const calibrationSchedule = serializeVisualSchedule(calibrationVisual(0.4));
+  const deviceCappedSchedule = serializeVisualSchedule(calibrationVisual(), 0.25);
   assert.equal(CALIBRATION.durationSec, 8, "the app must be able to read the camera calibration duration");
   assert.deepEqual(calibrationSchedule.definitions.map((definition) => definition.opcode), [OP.LOAD_CHANNEL, OP.LOAD_SEGMENT, OP.LOAD_CHANNEL, OP.LOAD_SEGMENT]);
   assert.equal(calibrationSchedule.definitions[1].payload[12], Math.round(0.4 * 255));
+  assert.equal(deviceCappedSchedule.definitions[1].payload[12], Math.round(0.25 * 255), "normalized intensity must be scaled by the characterized device ceiling");
 
   const startMs = 100000;
   const square = [];
