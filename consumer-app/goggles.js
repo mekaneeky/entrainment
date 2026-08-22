@@ -146,7 +146,6 @@
       this.clockHistory = [];
       this.heartbeatTimer = null;
       this.heartbeatBusy = false;
-      this.heartbeatCount = 0;
       this.referenceElapsedUs = null;
       this.startPerformanceMs = 0;
       this.startDeviceUs = 0;
@@ -390,14 +389,11 @@
 
     startHeartbeat() {
       this.stopHeartbeat();
-      this.heartbeatCount = 0;
       this.heartbeatTimer = this.timers.setInterval(async () => {
         if (!this.connected || !this.sessionId || this.heartbeatBusy) return;
         this.heartbeatBusy = true;
         try {
           await this.send(OP.HEARTBEAT, makePayload((data) => data.setUint32(0, this.sessionId, true)), OP.ACK, 1800);
-          this.heartbeatCount += 1;
-          if (this.heartbeatCount % 30 === 0) await this.correctDrift();
         } catch (error) { this.fail(error); }
         finally { this.heartbeatBusy = false; }
       }, 1000);

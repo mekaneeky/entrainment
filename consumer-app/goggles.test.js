@@ -86,6 +86,22 @@ controller.control = {
   const unstableBleController = new GogglesController({ bluetooth: null, clock: unstableBleClock, timers });
   unstableBleController.send = async () => ({ deviceUs: unstableBleClock.value * 1000 });
   await assert.rejects(() => unstableBleController.synchronize(3), /too unstable/);
+  let heartbeatTick;
+  const heartbeatOps = [];
+  const heartbeatController = new GogglesController({
+    bluetooth: null,
+    clock: fakeClock,
+    timers: { ...timers, setInterval(callback) { heartbeatTick = callback; return 1; } },
+  });
+  heartbeatController.device = { gatt: { connected: true } };
+  heartbeatController.control = {};
+  heartbeatController.events = {};
+  heartbeatController.sessionId = 7;
+  heartbeatController.send = async (opcode) => heartbeatOps.push(opcode);
+  heartbeatController.startHeartbeat();
+  for (let count = 0; count < 31; count += 1) await heartbeatTick();
+  heartbeatController.stopHeartbeat();
+  assert.deepEqual(heartbeatOps, Array(31).fill(OP.HEARTBEAT), "heartbeats must not trigger noisy mid-session resynchronization");
   const start = fakeClock.now() + 2000;
   await controller.arm(start);
   await controller.commit();
