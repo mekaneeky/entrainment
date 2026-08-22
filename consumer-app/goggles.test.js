@@ -4,6 +4,7 @@ const { parseProfileFile } = require("./core");
 const {
   GogglesController,
   OP,
+  CALIBRATION,
   crc8,
   finishCrc32,
   packet,
@@ -132,6 +133,7 @@ controller.control = {
   assert.throws(() => labController.setFlashLatency(251), /0-250/);
 
   const calibrationSchedule = serializeVisualSchedule(calibrationVisual(0.4));
+  assert.equal(CALIBRATION.durationSec, 8, "the app must be able to read the camera calibration duration");
   assert.deepEqual(calibrationSchedule.definitions.map((definition) => definition.opcode), [OP.LOAD_CHANNEL, OP.LOAD_SEGMENT, OP.LOAD_CHANNEL, OP.LOAD_SEGMENT]);
   assert.equal(calibrationSchedule.definitions[1].payload[12], Math.round(0.4 * 255));
 

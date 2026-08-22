@@ -499,7 +499,7 @@
     return { latencyMs: Math.round(median(errors)), onsets: onsets.length, matched: errors.length, contrast };
   }
 
-  const api = { GogglesController, OP, SERVICE_UUID, crc8, crc32, finishCrc32, packet, readPacket, serializeVisualSchedule, analyzeFlashLatency, calibrationVisual, median };
+  const api = { GogglesController, OP, SERVICE_UUID, CALIBRATION, crc8, crc32, finishCrc32, packet, readPacket, serializeVisualSchedule, analyzeFlashLatency, calibrationVisual, median };
   root.EntrainmentGoggles = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

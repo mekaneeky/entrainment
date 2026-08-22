@@ -248,7 +248,7 @@ input[type="range"] { width: 100%; min-height: 36px; margin: 5px 0; accent-color
 
 .lab-readout { display: flex; gap: 8px; align-items: baseline; margin: 12px 0 4px; font-size: 13px; }
 .lab-readout strong { font: 700 15px/1 var(--font-signal); }
-.lab-preview { width: min(100%, 240px); aspect-ratio: 4 / 3; margin-block: 10px; border: 1px solid var(--threshold); border-radius: var(--radius-control); background: #000; object-fit: cover; }
+.lab-preview { width: 100%; aspect-ratio: 4 / 3; margin-block: 10px; border: 1px solid var(--threshold); border-radius: var(--radius-control); background: #000; object-fit: cover; }
 .lab-tools label { margin-top: 14px; }
 .lab-tools input[type="number"] { max-width: 120px; }
 .lab-tools .text-button { margin-top: 6px; }

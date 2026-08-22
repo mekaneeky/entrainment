@@ -17,6 +17,14 @@ using namespace visual_protocol;
 // no PIN). 1 = legacy per-unit six-digit passkey entry for dev boards.
 #define DEV_PASSKEY_PAIRING 0
 
+#if DEV_PASSKEY_PAIRING
+constexpr uint16_t SECURE_READ_PERMISSION = ESP_GATT_PERM_READ_ENC_MITM;
+constexpr uint16_t SECURE_WRITE_PERMISSION = ESP_GATT_PERM_WRITE_ENC_MITM;
+#else
+constexpr uint16_t SECURE_READ_PERMISSION = ESP_GATT_PERM_READ_ENCRYPTED;
+constexpr uint16_t SECURE_WRITE_PERMISSION = ESP_GATT_PERM_WRITE_ENCRYPTED;
+#endif
+
 constexpr bool BUILTIN_LED_TEST = true;
 constexpr uint8_t BUILTIN_LED_PIN = 2;
 constexpr uint8_t LEFT_LED_PIN = 18;
@@ -647,11 +655,11 @@ void setup() {
   infoCharacteristic->setAccessPermissions(ESP_GATT_PERM_READ);
   BLECharacteristic *control = service->createCharacteristic(CONTROL_UUID, BLECharacteristic::PROPERTY_WRITE);
   control->setCallbacks(new ControlCallbacks());
-  control->setAccessPermissions(ESP_GATT_PERM_WRITE_ENC_MITM);
+  control->setAccessPermissions(SECURE_WRITE_PERMISSION);
   eventCharacteristic = service->createCharacteristic(EVENT_UUID, BLECharacteristic::PROPERTY_INDICATE);
-  eventCharacteristic->setAccessPermissions(ESP_GATT_PERM_READ_ENC_MITM);
+  eventCharacteristic->setAccessPermissions(SECURE_READ_PERMISSION);
   BLE2902 *descriptor = new BLE2902();
-  descriptor->setAccessPermissions(ESP_GATT_PERM_READ_ENC_MITM | ESP_GATT_PERM_WRITE_ENC_MITM);
+  descriptor->setAccessPermissions(SECURE_READ_PERMISSION | SECURE_WRITE_PERMISSION);
   eventCharacteristic->addDescriptor(descriptor);
   service->start();
   bleAdvertising = bleServer->getAdvertising();
