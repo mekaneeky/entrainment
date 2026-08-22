@@ -8,6 +8,7 @@
   const MAGIC = 0xe7;
   const VERSION = 1;
   const PACKET_BYTES = 20;
+  const MAX_CLOCK_UNCERTAINTY_MS = 100;
 
   const OP = Object.freeze({
     INFO: 0x01,
@@ -348,7 +349,7 @@
         slope = Math.max(999.5, Math.min(1000.5, slope));
       }
       this.clockModel = { performanceMs: chosen.midpointMs, deviceUs: chosen.deviceUs, deviceUsPerMs: slope, uncertaintyMs: chosen.rttMs / 2 };
-      if (this.clockModel.uncertaintyMs > 25) throw new Error("Bluetooth timing is too unstable to start safely");
+      if (this.clockModel.uncertaintyMs > MAX_CLOCK_UNCERTAINTY_MS) throw new Error("Bluetooth timing is too unstable to schedule the goggles");
       return { ...this.clockModel };
     }
 

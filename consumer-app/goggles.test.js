@@ -78,6 +78,14 @@ controller.control = {
   ]);
   const model = await controller.synchronize(3);
   assert.ok(model.uncertaintyMs <= 1);
+  const ordinaryBleClock = { value: 0, now() { this.value += 120; return this.value; } };
+  const ordinaryBleController = new GogglesController({ bluetooth: null, clock: ordinaryBleClock, timers });
+  ordinaryBleController.send = async () => ({ deviceUs: ordinaryBleClock.value * 1000 });
+  assert.equal((await ordinaryBleController.synchronize(3)).uncertaintyMs, 60, "ordinary BLE jitter must not abort scheduling");
+  const unstableBleClock = { value: 0, now() { this.value += 220; return this.value; } };
+  const unstableBleController = new GogglesController({ bluetooth: null, clock: unstableBleClock, timers });
+  unstableBleController.send = async () => ({ deviceUs: unstableBleClock.value * 1000 });
+  await assert.rejects(() => unstableBleController.synchronize(3), /too unstable/);
   const start = fakeClock.now() + 2000;
   await controller.arm(start);
   await controller.commit();
