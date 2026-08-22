@@ -692,6 +692,10 @@
     try {
       await ensureBuiltInProfiles();
       navigator.storage?.persist?.().catch(() => {});
+      fetch("./service-worker.js").then((response) => response.text()).then((text) => {
+        const match = text.match(/listening-room-v(\d+)/);
+        if (match) $("#build-tag").textContent = ` · build ${match[1]}`;
+      }).catch(() => {});
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         const serviceWorker = navigator.serviceWorker;
         const hadController = Boolean(serviceWorker.controller);
