@@ -25,7 +25,7 @@ constexpr uint16_t SECURE_READ_PERMISSION = ESP_GATT_PERM_READ_ENCRYPTED;
 constexpr uint16_t SECURE_WRITE_PERMISSION = ESP_GATT_PERM_WRITE_ENCRYPTED;
 #endif
 
-constexpr bool BUILTIN_LED_TEST = true;
+constexpr bool BUILTIN_LED_TEST = false;
 constexpr uint8_t BUILTIN_LED_PIN = 2;
 constexpr uint8_t LEFT_LED_PIN = 18;
 constexpr uint8_t RIGHT_LED_PIN = 19;
